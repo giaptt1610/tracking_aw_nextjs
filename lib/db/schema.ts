@@ -1,5 +1,5 @@
-import { pgTable, uuid, text, numeric, integer, timestamp, check } from 'drizzle-orm/pg-core'
-import { sql } from 'drizzle-orm'
+import { pgTable, uuid, text, numeric, integer, timestamp } from 'drizzle-orm/pg-core'
+import { relations } from 'drizzle-orm'
 
 export const products = pgTable("products", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -30,6 +30,14 @@ export const orderItems = pgTable("order_items", {
   purchaseCost: numeric("purchase_cost", { precision: 15, scale: 2 }).notNull(),
   sellPrice: numeric("sell_price", { precision: 15, scale: 2 }).notNull(),
 })
+
+export const ordersRelations = relations(orders, ({ many }) => ({
+  items: many(orderItems),
+}))
+
+export const orderItemsRelations = relations(orderItems, ({ one }) => ({
+  order: one(orders, { fields: [orderItems.orderId], references: [orders.id] }),
+}))
 
 export type Product = typeof products.$inferSelect
 export type NewProduct = typeof products.$inferInsert

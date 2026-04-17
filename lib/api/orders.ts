@@ -1,8 +1,7 @@
 import { eq, gte, lte, and, desc, count, SQL } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { orders, orderItems } from '@/lib/db/schema'
-import type { OrderStatus } from '@/types/order'
-import type { Order } from '@/types/order'
+import type { OrderStatus, Order } from '@/types/order'
 
 // --- Pure helpers (exported for testing) ---
 
@@ -114,4 +113,92 @@ export async function getOrderById(id: string): Promise<Order | null> {
   })
   if (!row) return null
   return mapOrderRow({ ...row, items: row.items as OrderRowItem[] })
+}
+
+// --- CRUD ---
+
+export type OrderItemInput = {
+  productId: string
+  productName: string
+  quantity: number
+  purchaseCost: number
+  sellPrice: number
+}
+
+export type CreateOrderInput = {
+  status: OrderStatus
+  note?: string
+  items: OrderItemInput[]
+}
+
+export type UpdateOrderInput = {
+  status?: OrderStatus
+  note?: string
+}
+
+export async function createOrder(input: CreateOrderInput): Promise<Order> {
+  const totalPurchaseCost = input.items.reduce(
+    (sum, it) => sum + it.purchaseCost * it.quantity,
+    0
+  )
+  const totalSellRevenue = input.items.reduce(
+    (sum, it) => sum + it.sellPrice * it.quantity,
+    0
+  )
+
+  const [order] = await db
+    .insert(orders)
+    .values({
+      status: input.status,
+      totalPurchaseCost: String(totalPurchaseCost),
+      totalSellRevenue: String(totalSellRevenue),
+      note: input.note ?? null,
+    })
+    .returning()
+
+  try {
+    await db.insert(orderItems).values(
+      input.items.map((it) => ({
+        orderId: order.id,
+        productId: it.productId,
+        productName: it.productName,
+        quantity: it.quantity,
+        purchaseCost: String(it.purchaseCost),
+        sellPrice: String(it.sellPrice),
+      }))
+    )
+  } catch (err) {
+    // Clean up the order if items insert fails
+    await db.delete(orders).where(eq(orders.id, order.id))
+    throw err
+  }
+
+  const full = await getOrderById(order.id)
+  return full!
+}
+
+export async function updateOrder(
+  id: string,
+  input: UpdateOrderInput
+): Promise<Order | null> {
+  const [row] = await db
+    .update(orders)
+    .set({
+      ...(input.status !== undefined && { status: input.status }),
+      ...(input.note !== undefined && { note: input.note }),
+    })
+    .where(eq(orders.id, id))
+    .returning()
+
+  if (!row) return null
+  return getOrderById(id)
+}
+
+export async function deleteOrder(id: string): Promise<boolean> {
+  // orderItems cascade-delete automatically (onDelete: 'cascade' in schema)
+  const result = await db
+    .delete(orders)
+    .where(eq(orders.id, id))
+    .returning({ id: orders.id })
+  return result.length > 0
 }

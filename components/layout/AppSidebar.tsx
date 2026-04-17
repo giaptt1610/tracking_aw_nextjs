@@ -7,6 +7,7 @@ import {
   UnorderedListOutlined,
   AppstoreOutlined,
   BarChartOutlined,
+  ApiOutlined,
 } from '@ant-design/icons'
 
 const menuItems = [
@@ -14,6 +15,7 @@ const menuItems = [
   { key: '/orders', icon: <UnorderedListOutlined />, label: 'Đơn hàng' },
   { key: '/products', icon: <AppstoreOutlined />, label: 'Sản phẩm' },
   { key: '/statistics', icon: <BarChartOutlined />, label: 'Thống kê' },
+  { key: '/api-test', icon: <ApiOutlined />, label: 'API Test' },
 ]
 
 export function AppSidebar() {
