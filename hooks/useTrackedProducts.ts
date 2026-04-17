@@ -1,18 +1,18 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { MOCK_PRODUCTS } from '@/lib/mock/products'
 
 const STORAGE_KEY = 'tracking_aw_tracked_products'
 
 export function useTrackedProducts() {
   const [trackedIds, setTrackedIds] = useState<string[]>(() => {
-    if (typeof window === 'undefined') return MOCK_PRODUCTS.filter((p) => p.isTracked).map((p) => p.id)
+    if (typeof window === 'undefined') return []
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) return JSON.parse(stored) as string[]
-    } catch {}
-    return MOCK_PRODUCTS.filter((p) => p.isTracked).map((p) => p.id)
+      return stored ? (JSON.parse(stored) as string[]) : []
+    } catch {
+      return []
+    }
   })
 
   useEffect(() => {
@@ -27,7 +27,5 @@ export function useTrackedProducts() {
     )
   }
 
-  const trackedProducts = MOCK_PRODUCTS.filter((p) => trackedIds.includes(p.id))
-
-  return { trackedIds, trackedProducts, toggleProduct }
+  return { trackedIds, toggleProduct }
 }

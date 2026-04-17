@@ -1,21 +1,31 @@
-import { useMemo } from 'react'
-import { MOCK_ORDERS } from '@/lib/mock/orders'
-import { ProductStat, PeriodStat } from '@/types/statistics'
+'use client'
+
+import { useState, useEffect, useMemo } from 'react'
+import type { ProductStat, PeriodStat } from '@/types/statistics'
+import type { Order } from '@/types/order'
 
 export function useStatistics(fromDate?: string, toDate?: string) {
-  const filteredOrders = useMemo(() => {
-    if (!fromDate && !toDate) return MOCK_ORDERS
-    return MOCK_ORDERS.filter((o) => {
-      const d = o.createdAt
-      if (fromDate && d < fromDate) return false
-      if (toDate && d > toDate) return false
-      return true
-    })
+  const [orders, setOrders] = useState<Order[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    setIsLoading(true)
+    const params = new URLSearchParams({ pageSize: '1000' })
+    if (fromDate) params.set('from', fromDate)
+    if (toDate) params.set('to', toDate)
+
+    fetch('/api/orders?' + params.toString())
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success) setOrders(json.data.orders)
+      })
+      .catch(() => {})
+      .finally(() => setIsLoading(false))
   }, [fromDate, toDate])
 
   const productStats: ProductStat[] = useMemo(() => {
     const map = new Map<string, ProductStat>()
-    for (const order of filteredOrders) {
+    for (const order of orders) {
       if (order.status === 'cancelled') continue
       for (const item of order.items) {
         const existing = map.get(item.productId)
@@ -44,11 +54,11 @@ export function useStatistics(fromDate?: string, toDate?: string) {
       }
     }
     return Array.from(map.values()).sort((a, b) => b.totalProfit - a.totalProfit)
-  }, [filteredOrders])
+  }, [orders])
 
   const periodStats: PeriodStat[] = useMemo(() => {
     const map = new Map<string, PeriodStat>()
-    for (const order of filteredOrders) {
+    for (const order of orders) {
       if (order.status === 'cancelled') continue
       const period = order.createdAt.slice(0, 7)
       const existing = map.get(period)
@@ -71,17 +81,17 @@ export function useStatistics(fromDate?: string, toDate?: string) {
       }
     }
     return Array.from(map.values()).sort((a, b) => a.period.localeCompare(b.period))
-  }, [filteredOrders])
+  }, [orders])
 
   const totals = useMemo(() => {
-    const active = filteredOrders.filter((o) => o.status !== 'cancelled')
+    const active = orders.filter((o) => o.status !== 'cancelled')
     return {
       totalRevenue: active.reduce((s, o) => s + o.totalSellRevenue, 0),
       totalCost: active.reduce((s, o) => s + o.totalPurchaseCost, 0),
       totalProfit: active.reduce((s, o) => s + o.profit, 0),
       orderCount: active.length,
     }
-  }, [filteredOrders])
+  }, [orders])
 
-  return { productStats, periodStats, totals, isLoading: false }
+  return { productStats, periodStats, totals, isLoading }
 }

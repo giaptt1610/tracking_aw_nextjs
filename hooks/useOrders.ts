@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react'
-import { MOCK_ORDERS } from '@/lib/mock/orders'
-import { Order, OrderStatus } from '@/types/order'
+'use client'
+
+import { useState, useEffect, useCallback } from 'react'
+import type { Order, OrderStatus } from '@/types/order'
 
 interface UseOrdersOptions {
   status?: OrderStatus
-  productId?: string
-  dateRange?: [string, string]
+  from?: string
+  to?: string
   page?: number
   pageSize?: number
 }
@@ -15,35 +16,42 @@ interface UseOrdersReturn {
   total: number
   isLoading: boolean
   error: string | null
+  refresh: () => void
 }
 
 export function useOrders(options: UseOrdersOptions = {}): UseOrdersReturn {
-  const { status, productId, dateRange, page = 1, pageSize = 10 } = options
+  const { status, from, to, page = 1, pageSize = 10 } = options
+  const [orders, setOrders] = useState<Order[]>([])
+  const [total, setTotal] = useState(0)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const filtered = useMemo(() => {
-    let result = [...MOCK_ORDERS]
+  const load = useCallback(async () => {
+    setIsLoading(true)
+    setError(null)
+    try {
+      const params = new URLSearchParams()
+      if (status) params.set('status', status)
+      if (from) params.set('from', from)
+      if (to) params.set('to', to)
+      params.set('page', String(page))
+      params.set('pageSize', String(pageSize))
 
-    if (status) {
-      result = result.filter((o) => o.status === status)
+      const res = await fetch('/api/orders?' + params.toString())
+      const json = await res.json()
+      if (!json.success) throw new Error(json.error)
+      setOrders(json.data.orders)
+      setTotal(json.data.total)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Không thể tải danh sách đơn hàng')
+    } finally {
+      setIsLoading(false)
     }
-    if (productId) {
-      result = result.filter((o) => o.items.some((it) => it.productId === productId))
-    }
-    if (dateRange) {
-      const [from, to] = dateRange
-      result = result.filter((o) => {
-        const d = o.createdAt
-        return d >= from && d <= to
-      })
-    }
+  }, [status, from, to, page, pageSize])
 
-    return result
-  }, [status, productId, dateRange])
+  useEffect(() => {
+    load()
+  }, [load])
 
-  const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filtered.slice(start, start + pageSize)
-  }, [filtered, page, pageSize])
-
-  return { orders: paginated, total: filtered.length, isLoading: false, error: null }
+  return { orders, total, isLoading, error, refresh: load }
 }
