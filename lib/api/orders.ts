@@ -1,4 +1,4 @@
-import { eq, gte, lte, and, desc, count, SQL } from 'drizzle-orm'
+import { eq, gte, lte, and, desc, count, sum, ne, SQL } from 'drizzle-orm'
 import { db } from '@/lib/db'
 import { orders, orderItems } from '@/lib/db/schema'
 import type { OrderStatus, Order } from '@/types/order'
@@ -113,6 +113,37 @@ export async function getOrderById(id: string): Promise<Order | null> {
   })
   if (!row) return null
   return mapOrderRow({ ...row, items: row.items as OrderRowItem[] })
+}
+
+export type OrderTotals = {
+  totalRevenue: number
+  totalCost: number
+  totalProfit: number
+  orderCount: number
+}
+
+export async function getOrderTotals(filters: OrderFiltersInput = {}): Promise<OrderTotals> {
+  const conditions = buildOrderFilters(filters)
+  conditions.push(ne(orders.status, 'cancelled'))
+  const where = and(...conditions)
+
+  const [row] = await db
+    .select({
+      totalRevenue: sum(orders.totalSellRevenue),
+      totalCost: sum(orders.totalPurchaseCost),
+      orderCount: count(),
+    })
+    .from(orders)
+    .where(where)
+
+  const totalRevenue = Number(row?.totalRevenue ?? 0)
+  const totalCost = Number(row?.totalCost ?? 0)
+  return {
+    totalRevenue,
+    totalCost,
+    totalProfit: totalRevenue - totalCost,
+    orderCount: Number(row?.orderCount ?? 0),
+  }
 }
 
 // --- CRUD ---

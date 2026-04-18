@@ -1,13 +1,14 @@
-import { MOCK_ORDERS } from '@/lib/mock/orders'
+import { getOrderById } from '@/lib/api/orders'
 import { Card, Descriptions, Table } from 'antd'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { OrderStatusTag } from '@/components/orders/OrderStatusTag'
 import { formatVND, formatDate } from '@/lib/utils/formatters'
 import { notFound } from 'next/navigation'
 import { OrderItem } from '@/types/order'
+import { profitColor } from '@/lib/theme/colors'
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
-  const order = MOCK_ORDERS.find((o) => o.id === params.id)
+export default async function OrderDetailPage({ params }: { params: { id: string } }) {
+  const order = await getOrderById(params.id)
   if (!order) notFound()
 
   return (
@@ -19,7 +20,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           <Descriptions.Item label="Ngay tao">{formatDate(order.createdAt)}</Descriptions.Item>
           <Descriptions.Item label="Trang thai"><OrderStatusTag status={order.status} /></Descriptions.Item>
           <Descriptions.Item label="Loi nhuan">
-            <span style={{ color: order.profit >= 0 ? '#52c41a' : '#ff4d4f' }}>{formatVND(order.profit)}</span>
+            <span style={{ color: profitColor(order.profit) }}>{formatVND(order.profit)}</span>
           </Descriptions.Item>
           <Descriptions.Item label="Doanh thu">{formatVND(order.totalSellRevenue)}</Descriptions.Item>
           <Descriptions.Item label="Chi phi">{formatVND(order.totalPurchaseCost)}</Descriptions.Item>
@@ -32,7 +33,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
           { title: 'Gia nhap', dataIndex: 'purchaseCost', key: 'cost', render: (v: number) => formatVND(v), align: 'right' as const },
           { title: 'Gia ban', dataIndex: 'sellPrice', key: 'sell', render: (v: number) => formatVND(v), align: 'right' as const },
           { title: 'Loi nhuan', key: 'profit', align: 'right' as const,
-            render: (_: unknown, r: OrderItem) => { const p = (r.sellPrice - r.purchaseCost) * r.quantity; return <span style={{ color: p >= 0 ? '#52c41a' : '#ff4d4f' }}>{formatVND(p)}</span> } },
+            render: (_: unknown, r: OrderItem) => { const p = (r.sellPrice - r.purchaseCost) * r.quantity; return <span style={{ color: profitColor(p) }}>{formatVND(p)}</span> } },
         ]} />
       </Card>
     </div>
