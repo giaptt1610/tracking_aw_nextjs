@@ -4,14 +4,14 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 First, run the development server:
 
+Install dependencies
+
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+pnpm install
+```
+
+```bash
 pnpm dev
-# or
-bun dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
