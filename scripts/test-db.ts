@@ -14,7 +14,6 @@ if (!DATABASE_URL) {
   console.error("✗ DATABASE_URL chưa được set trong .env.local");
   process.exit(1);
 }
-
 // DATABASE_URL is guaranteed non-empty after the guard above
 const dbUrl = DATABASE_URL;
 
