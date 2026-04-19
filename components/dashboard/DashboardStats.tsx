@@ -20,7 +20,7 @@ export function DashboardStats({ totals }: { totals: Totals }) {
             title="Tổng đơn"
             value={totals.orderCount}
             prefix={<FileTextOutlined />}
-            valueStyle={{ color: BRAND_COLORS.primary }}
+            styles={{ content: { color: BRAND_COLORS.primary } }}
           />
         </Card>
       </Col>
@@ -32,7 +32,7 @@ export function DashboardStats({ totals }: { totals: Totals }) {
             suffix="VND"
             formatter={(v) => Number(v).toLocaleString('vi-VN')}
             prefix={<RiseOutlined />}
-            valueStyle={{ color: BRAND_COLORS.success }}
+            styles={{ content: { color: BRAND_COLORS.success } }}
           />
         </Card>
       </Col>
@@ -44,7 +44,7 @@ export function DashboardStats({ totals }: { totals: Totals }) {
             suffix="VND"
             formatter={(v) => Number(v).toLocaleString('vi-VN')}
             prefix={<FallOutlined />}
-            valueStyle={{ color: BRAND_COLORS.error }}
+            styles={{ content: { color: BRAND_COLORS.error } }}
           />
         </Card>
       </Col>
@@ -56,7 +56,7 @@ export function DashboardStats({ totals }: { totals: Totals }) {
             suffix="VND"
             formatter={(v) => Number(v).toLocaleString('vi-VN')}
             prefix={<ShoppingCartOutlined />}
-            valueStyle={{ color: profitColor(totals.totalProfit) }}
+            styles={{ content: { color: profitColor(totals.totalProfit) } }}
           />
         </Card>
       </Col>

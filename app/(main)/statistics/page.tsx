@@ -26,9 +26,9 @@ export default function StatisticsPage() {
         }
       />
       <Row gutter={[16, 16]} className="mb-6">
-        <Col xs={24} sm={8}><Card><Statistic title="Doanh thu" value={totals.totalRevenue} suffix="VND" formatter={(v) => Number(v).toLocaleString('vi-VN')} valueStyle={{ color: '#52c41a' }} /></Card></Col>
-        <Col xs={24} sm={8}><Card><Statistic title="Chi phi" value={totals.totalCost} suffix="VND" formatter={(v) => Number(v).toLocaleString('vi-VN')} valueStyle={{ color: '#ff4d4f' }} /></Card></Col>
-        <Col xs={24} sm={8}><Card><Statistic title="Loi nhuan" value={totals.totalProfit} suffix="VND" formatter={(v) => Number(v).toLocaleString('vi-VN')} valueStyle={{ color: totals.totalProfit >= 0 ? '#1677ff' : '#ff4d4f' }} /></Card></Col>
+        <Col xs={24} sm={8}><Card><Statistic title="Doanh thu" value={totals.totalRevenue} suffix="VND" formatter={(v) => Number(v).toLocaleString('vi-VN')} styles={{ content: { color: '#52c41a' } }} /></Card></Col>
+        <Col xs={24} sm={8}><Card><Statistic title="Chi phi" value={totals.totalCost} suffix="VND" formatter={(v) => Number(v).toLocaleString('vi-VN')} styles={{ content: { color: '#ff4d4f' } }} /></Card></Col>
+        <Col xs={24} sm={8}><Card><Statistic title="Loi nhuan" value={totals.totalProfit} suffix="VND" formatter={(v) => Number(v).toLocaleString('vi-VN')} styles={{ content: { color: totals.totalProfit >= 0 ? '#1677ff' : '#ff4d4f' } }} /></Card></Col>
       </Row>
       <Row gutter={[16, 16]} className="mb-6">
         <Col xs={24} lg={16}>
