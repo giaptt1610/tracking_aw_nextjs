@@ -9,7 +9,6 @@ import {
   Input,
   InputNumber,
   Select,
-  Spin,
   Tag,
   Typography,
   Tabs,
@@ -19,7 +18,8 @@ import dayjs from 'dayjs'
 
 const { Text, Title } = Typography
 
-type ParamType = 'string' | 'number' | 'date' | 'select'
+type ParamType = 'string' | 'number' | 'date' | 'select' | 'array'
+type ParamLocation = 'query' | 'path' | 'body'
 
 type ParamDef = {
   name: string
@@ -27,11 +27,11 @@ type ParamDef = {
   options?: string[]
   placeholder?: string
   required?: boolean
-  inPath?: boolean
+  location?: ParamLocation
 }
 
 type EndpointDef = {
-  method: 'GET'
+  method: 'GET' | 'POST' | 'PUT' | 'DELETE'
   path: string
   description: string
   params: ParamDef[]
@@ -49,8 +49,71 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
       {
         method: 'GET',
         path: '/api/products',
-        description: 'Lấy danh sách tất cả sản phẩm',
+        description: 'Lấy danh sách sản phẩm (kèm images[] và refUrl)',
         params: [],
+      },
+      {
+        method: 'GET',
+        path: '/api/products/{id}',
+        description: 'Lấy chi tiết một sản phẩm theo ID',
+        params: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            location: 'path',
+            placeholder: 'UUID của sản phẩm',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/api/products/{id}/images',
+        description: 'Lấy danh sách ảnh của một sản phẩm',
+        params: [
+          {
+            name: 'id',
+            type: 'string',
+            required: true,
+            location: 'path',
+            placeholder: 'UUID của sản phẩm',
+          },
+        ],
+      },
+      {
+        method: 'GET',
+        path: '/api/products/sku/{sku}/images',
+        description: 'Lấy danh sách ảnh theo SKU sản phẩm',
+        params: [
+          {
+            name: 'sku',
+            type: 'string',
+            required: true,
+            location: 'path',
+            placeholder: 'Mã SKU sản phẩm',
+          },
+        ],
+      },
+      {
+        method: 'POST',
+        path: '/api/products',
+        description: 'Tạo sản phẩm mới',
+        params: [
+          { name: 'name', type: 'string', required: true, location: 'body', placeholder: 'Tên sản phẩm' },
+          { name: 'sku', type: 'string', required: true, location: 'body', placeholder: 'Mã SKU' },
+          {
+            name: 'category',
+            type: 'select',
+            required: true,
+            location: 'body',
+            options: ['Điện tử', 'Thời trang', 'Gia dụng', 'Thực phẩm', 'Khác'],
+            placeholder: 'Chọn danh mục',
+          },
+          { name: 'defaultPurchaseCost', type: 'number', required: true, location: 'body', placeholder: 'Giá nhập' },
+          { name: 'defaultSellPrice', type: 'number', required: true, location: 'body', placeholder: 'Giá bán' },
+          { name: 'refUrl', type: 'string', location: 'body', placeholder: 'https://...' },
+          { name: 'images', type: 'array', location: 'body', placeholder: 'Mỗi dòng một URL ảnh' },
+        ],
       },
     ],
   },
@@ -83,7 +146,7 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
             name: 'id',
             type: 'string',
             required: true,
-            inPath: true,
+            location: 'path',
             placeholder: 'UUID của đơn hàng',
           },
         ],
@@ -106,14 +169,23 @@ const ENDPOINT_GROUPS: EndpointGroup[] = [
   },
 ]
 
+const METHOD_COLORS: Record<string, string> = {
+  GET: 'blue',
+  POST: 'green',
+  PUT: 'orange',
+  DELETE: 'red',
+}
+
 function buildUrl(path: string, params: ParamDef[], values: Record<string, string>): string {
   let url = path
   const query = new URLSearchParams()
 
   for (const param of params) {
+    const loc = param.location ?? 'query'
+    if (loc === 'body') continue
     const val = values[param.name]
     if (!val) continue
-    if (param.inPath) {
+    if (loc === 'path') {
       url = url.replace(`{${param.name}}`, encodeURIComponent(val))
     } else {
       query.set(param.name, val)
@@ -122,6 +194,25 @@ function buildUrl(path: string, params: ParamDef[], values: Record<string, strin
 
   const qs = query.toString()
   return qs ? `${url}?${qs}` : url
+}
+
+function buildBody(params: ParamDef[], values: Record<string, string>): Record<string, unknown> | null {
+  const bodyParams = params.filter((p) => p.location === 'body')
+  if (bodyParams.length === 0) return null
+
+  const body: Record<string, unknown> = {}
+  for (const param of bodyParams) {
+    const val = values[param.name]
+    if (!val) continue
+    if (param.type === 'number') {
+      body[param.name] = Number(val)
+    } else if (param.type === 'array') {
+      body[param.name] = val.split('\n').map((s) => s.trim()).filter(Boolean)
+    } else {
+      body[param.name] = val
+    }
+  }
+  return body
 }
 
 function ParamInput({
@@ -161,8 +252,19 @@ function ParamInput({
         placeholder={param.placeholder ?? param.name}
         value={value ? Number(value) : undefined}
         onChange={(v) => onChange(v != null ? String(v) : '')}
-        style={{ minWidth: 100 }}
-        min={1}
+        style={{ minWidth: 120 }}
+        min={0}
+      />
+    )
+  }
+  if (param.type === 'array') {
+    return (
+      <Input.TextArea
+        placeholder={param.placeholder ?? param.name}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        rows={3}
+        style={{ minWidth: 280 }}
       />
     )
   }
@@ -188,15 +290,25 @@ function EndpointCard({ endpoint }: { endpoint: EndpointDef }) {
     setResponse(null)
     try {
       const url = buildUrl(endpoint.path, endpoint.params, values)
-      const res = await fetch(url)
-      const body = await res.json()
-      setResponse({ status: res.status, body })
+      const isBodyMethod = endpoint.method !== 'GET'
+      const body = isBodyMethod ? buildBody(endpoint.params, values) : null
+
+      const res = await fetch(url, {
+        method: endpoint.method,
+        headers: body ? { 'Content-Type': 'application/json' } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
+      })
+      const resBody = await res.json()
+      setResponse({ status: res.status, body: resBody })
     } catch (err) {
       setResponse({ status: 0, body: { error: String(err) } })
     } finally {
       setLoading(false)
     }
   }
+
+  const queryParams = endpoint.params.filter((p) => (p.location ?? 'query') !== 'body')
+  const bodyParams = endpoint.params.filter((p) => p.location === 'body')
 
   const statusColor =
     response === null
@@ -207,13 +319,36 @@ function EndpointCard({ endpoint }: { endpoint: EndpointDef }) {
 
   return (
     <div className="space-y-4">
-      {endpoint.params.length > 0 && (
+      {queryParams.length > 0 && (
         <div>
           <Text type="secondary" className="block mb-2 text-xs uppercase tracking-wide">
-            Parameters
+            Query / Path Parameters
           </Text>
           <div className="flex flex-wrap gap-3">
-            {endpoint.params.map((param) => (
+            {queryParams.map((param) => (
+              <div key={param.name} className="flex flex-col gap-1">
+                <Text className="text-xs text-gray-500">
+                  {param.name}
+                  {param.required && <span className="text-red-500 ml-0.5">*</span>}
+                </Text>
+                <ParamInput
+                  param={param}
+                  value={values[param.name] ?? ''}
+                  onChange={(v) => setValues((prev) => ({ ...prev, [param.name]: v }))}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {bodyParams.length > 0 && (
+        <div>
+          <Text type="secondary" className="block mb-2 text-xs uppercase tracking-wide">
+            Request Body
+          </Text>
+          <div className="flex flex-wrap gap-3">
+            {bodyParams.map((param) => (
               <div key={param.name} className="flex flex-col gap-1">
                 <Text className="text-xs text-gray-500">
                   {param.name}
@@ -233,8 +368,6 @@ function EndpointCard({ endpoint }: { endpoint: EndpointDef }) {
       <Button type="primary" icon={<SendOutlined />} loading={loading} onClick={handleSend}>
         Send Request
       </Button>
-
-      {loading && <Spin />}
 
       {response && (
         <div className="border rounded-lg overflow-hidden">
@@ -268,7 +401,7 @@ export default function ApiTestPage() {
           key: idx,
           label: (
             <div className="flex items-center gap-3">
-              <Tag color="blue" className="font-mono font-bold">
+              <Tag color={METHOD_COLORS[ep.method]} className="font-mono font-bold">
                 {ep.method}
               </Tag>
               <Text code className="text-sm">

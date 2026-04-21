@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, Checkbox, Col, Row, Spin, Space } from 'antd'
-import { PlusOutlined, EditOutlined } from '@ant-design/icons'
+import { Button, Card, Checkbox, Col, Image, Row, Spin, Space, Tooltip } from 'antd'
+import { PlusOutlined, EditOutlined, LinkOutlined } from '@ant-design/icons'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useProducts } from '@/hooks/useProducts'
 import { useTrackedProducts } from '@/hooks/useTrackedProducts'
@@ -47,6 +47,13 @@ export default function ProductsPage() {
                     onClick={() => toggleProduct(product.id)}
                     extra={
                       <Space onClick={(e) => e.stopPropagation()}>
+                        {product.refUrl && (
+                          <Tooltip title="Xem trang bán">
+                            <a href={product.refUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                              <LinkOutlined className="text-blue-400" />
+                            </a>
+                          </Tooltip>
+                        )}
                         <Button
                           size="small"
                           icon={<EditOutlined />}
@@ -64,6 +71,18 @@ export default function ProductsPage() {
                       </Space>
                     }
                   >
+                    {product.images[0]?.url && (
+                      <div className="mb-2" onClick={(e) => e.stopPropagation()}>
+                        <Image
+                          src={product.images[0].url}
+                          alt={product.name}
+                          width={60}
+                          height={60}
+                          style={{ objectFit: 'cover', borderRadius: 4 }}
+                          fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAAi0lEQVRoge3BMQEAAADCoPVP7WsIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAMBuAABHgAAAABJRU5ErkJggg=="
+                        />
+                      </div>
+                    )}
                     <div className="font-medium text-sm">{product.name}</div>
                     <div className="text-xs text-gray-500">{product.sku}</div>
                     <div className="flex justify-between text-xs mt-1">
