@@ -1,9 +1,9 @@
-'use client'
+"use client"
 
-import { useEffect } from 'react'
-import { Form, Input, Modal, Select, message } from 'antd'
-import { updateOrderAction } from '@/lib/actions/orders'
-import type { Order, OrderStatus } from '@/types/order'
+import { useEffect } from "react"
+import { Form, Input, Modal, Select, message } from "antd"
+import { updateOrderAction } from "@/lib/actions/orders"
+import type { Order, OrderStatus } from "@/types/order"
 
 interface EditOrderModalProps {
   open: boolean
@@ -13,17 +13,24 @@ interface EditOrderModalProps {
 }
 
 const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
-  { label: 'Chờ xử lý', value: 'pending' },
-  { label: 'Hoàn thành', value: 'completed' },
-  { label: 'Đã hủy', value: 'cancelled' },
+  { label: "Chờ xử lý", value: "pending" },
+  { label: "Đã xác nhận", value: "confirmed" },
+  { label: "Đang giao", value: "shipping" },
+  { label: "Đã giao", value: "delivered" },
+  { label: "Đã hủy", value: "cancelled" },
 ]
 
-export function EditOrderModal({ open, order, onClose, onSuccess }: EditOrderModalProps) {
+export function EditOrderModal({
+  open,
+  order,
+  onClose,
+  onSuccess,
+}: EditOrderModalProps) {
   const [form] = Form.useForm()
 
   useEffect(() => {
     if (open && order) {
-      form.setFieldsValue({ status: order.status, note: order.note ?? '' })
+      form.setFieldsValue({ status: order.status, note: order.note ?? "" })
     }
   }, [open, order, form])
 
@@ -36,7 +43,7 @@ export function EditOrderModal({ open, order, onClose, onSuccess }: EditOrderMod
     })
 
     if (result.success) {
-      message.success('Cập nhật đơn hàng thành công')
+      message.success("Cập nhật đơn hàng thành công")
       onSuccess()
       onClose()
     } else {
@@ -55,7 +62,11 @@ export function EditOrderModal({ open, order, onClose, onSuccess }: EditOrderMod
       destroyOnClose
     >
       <Form form={form} layout="vertical" className="mt-4">
-        <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
+        <Form.Item
+          name="status"
+          label="Trạng thái"
+          rules={[{ required: true }]}
+        >
           <Select options={STATUS_OPTIONS} />
         </Form.Item>
         <Form.Item name="note" label="Ghi chú">

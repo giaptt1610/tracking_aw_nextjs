@@ -9,10 +9,8 @@ import DashboardStatRow from './DashboardStatRow'
 
 
 export async function DashboardStats() {
-  console.time("DashboardStats getTotals");
 
   const totals = await getOrderTotals()
-  console.timeEnd("DashboardStats getTotals");
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
