@@ -6,12 +6,12 @@ import { config } from "dotenv";
 import { resolve } from "path";
 import postgres from "postgres";
 
-config({ path: resolve(process.cwd(), ".env.local") });
+config({ path: resolve(process.cwd(), ".env.prod") });
 
 const DATABASE_URL = process.env.DATABASE_URL;
 
 if (!DATABASE_URL) {
-  console.error("✗ DATABASE_URL chưa được set trong .env.local");
+  console.error("✗ DATABASE_URL chưa được set trong .env.prod");
   process.exit(1);
 }
 // DATABASE_URL is guaranteed non-empty after the guard above

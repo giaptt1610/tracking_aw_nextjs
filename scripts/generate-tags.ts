@@ -113,12 +113,13 @@ function suggestTagsLocal(
   }
 
   // Thêm tên hoạt chất/từ khóa kỹ thuật xuất hiện trong mô tả (viết hoa)
-  const techTerms = [
-    ...`${name} ${description}`.matchAll(/\b[A-Z]{2,}\d*\b/g),
-  ].map((m) => m[0])
+  const techTerms = Array.from(
+    `${name} ${description}`.matchAll(/\b[A-Z]{2,}\d*\b/g),
+    (m) => m[0],
+  )
   techTerms.forEach((t) => found.add(t))
 
-  return [...found]
+  return Array.from(found)
 }
 
 function main() {
