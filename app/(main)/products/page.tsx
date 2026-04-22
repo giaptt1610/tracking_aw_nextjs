@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, Checkbox, Col, Image, Row, Spin, Space, Tooltip } from 'antd'
+import { Button, Card, Checkbox, Col, Image, Input, Row, Spin, Space, Tooltip } from 'antd'
 import { PlusOutlined, EditOutlined, LinkOutlined } from '@ant-design/icons'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useProducts } from '@/hooks/useProducts'
@@ -16,8 +16,19 @@ export default function ProductsPage() {
   const { trackedIds, toggleProduct } = useTrackedProducts()
   const [modalOpen, setModalOpen] = useState(false)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [search, setSearch] = useState('')
 
-  const categories = Array.from(new Set(products.map((p) => p.category)))
+  const q = search.trim().toLowerCase()
+  const filteredProducts = q
+    ? products.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          p.tags.some((t) => t.toLowerCase().includes(q))
+      )
+    : products
+
+  const categories = Array.from(new Set(filteredProducts.map((p) => p.category)))
 
   const openCreate = () => { setEditProduct(null); setModalOpen(true) }
   const openEdit = (p: Product) => { setEditProduct(p); setModalOpen(true) }
@@ -35,11 +46,18 @@ export default function ProductsPage() {
         }
       />
 
+      <Input.Search
+        placeholder="Tìm theo tên, danh mục, từ khóa (VD: xương, vitamin C, ...)"
+        allowClear
+        onChange={(e) => setSearch(e.target.value)}
+        className="mb-4"
+      />
+
       <Spin spinning={isLoading}>
         {categories.map((cat) => (
           <Card key={cat} title={cat} className="mb-4">
             <Row gutter={[12, 12]}>
-              {products.filter((p) => p.category === cat).map((product) => (
+              {filteredProducts.filter((p) => p.category === cat).map((product) => (
                 <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
                   <Card
                     size="small"

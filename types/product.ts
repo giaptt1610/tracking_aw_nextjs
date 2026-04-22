@@ -6,6 +6,7 @@ export interface Product {
   sku: string
   category: string
   refUrl: string | null
+  tags: string[]
   images: ProductImage[]
   defaultPurchaseCost: number
   defaultSellPrice: number

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Space, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Select, Space, message } from 'antd'
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { createProductAction, updateProductAction } from '@/lib/actions/products'
 import type { Product } from '@/types/product'
@@ -18,6 +18,7 @@ interface FormValues {
   sku: string
   category: string
   refUrl?: string
+  tags: string[]
   images: string[]
   defaultPurchaseCost: number
   defaultSellPrice: number
@@ -36,11 +37,12 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
               sku: product.sku,
               category: product.category,
               refUrl: product.refUrl ?? undefined,
+              tags: product.tags,
               images: product.images.map((i) => i.url),
               defaultPurchaseCost: product.defaultPurchaseCost,
               defaultSellPrice: product.defaultSellPrice,
             }
-          : { name: '', sku: '', category: '', refUrl: undefined, images: [], defaultPurchaseCost: undefined, defaultSellPrice: undefined }
+          : { name: '', sku: '', category: '', refUrl: undefined, tags: [], images: [], defaultPurchaseCost: undefined, defaultSellPrice: undefined }
       )
     }
   }, [open, product, form])
@@ -50,6 +52,7 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
     const payload = {
       ...values,
       refUrl: values.refUrl?.trim() || undefined,
+      tags: values.tags ?? [],
       images: values.images ?? [],
     }
     const result = isEdit
@@ -91,6 +94,17 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
           rules={[{ type: 'url', message: 'URL không hợp lệ' }]}
         >
           <Input placeholder="https://shopee.vn/..." />
+        </Form.Item>
+        <Form.Item
+          name="tags"
+          label="Từ khóa tìm kiếm"
+          tooltip="Nhập từ khóa rồi nhấn Enter — công dụng, thành phần, nhóm bệnh, ..."
+        >
+          <Select
+            mode="tags"
+            placeholder="VD: xương, khớp, glucosamine, canxi"
+            tokenSeparators={[',']}
+          />
         </Form.Item>
         <Form.Item label="Ảnh sản phẩm">
           <Form.List name="images">

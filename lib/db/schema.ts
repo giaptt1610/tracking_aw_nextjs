@@ -7,6 +7,7 @@ export const products = pgTable("products", {
   sku: text("sku").notNull().unique(),
   category: text("category").notNull(),
   refUrl: text("ref_url"),
+  tags: text("tags").array().notNull().default([]),
   defaultPurchaseCost: numeric("default_purchase_cost", { precision: 15, scale: 2 }).notNull(),
   defaultSellPrice: numeric("default_sell_price", { precision: 15, scale: 2 }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

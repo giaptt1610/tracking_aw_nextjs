@@ -11,6 +11,7 @@ export type ProductRow = {
   sku: string
   category: string
   refUrl: string | null
+  tags: string[]
   defaultPurchaseCost: string | number
   defaultSellPrice: string | number
   createdAt: Date
@@ -24,10 +25,11 @@ export function mapProductRow(row: ProductRow, images: ProductImage[] = []): Pro
     sku: row.sku,
     category: row.category,
     refUrl: row.refUrl,
+    tags: row.tags,
     images,
     defaultPurchaseCost: Number(row.defaultPurchaseCost),
     defaultSellPrice: Number(row.defaultSellPrice),
-    isTracked: false, // tracking is client-side (localStorage)
+    isTracked: false,
   }
 }
 
@@ -76,6 +78,7 @@ export type ProductInput = {
   sku: string
   category: string
   refUrl?: string | null
+  tags?: string[]
   images?: string[]
   defaultPurchaseCost: number
   defaultSellPrice: number
@@ -92,6 +95,7 @@ export async function createProduct(input: ProductInput): Promise<Product> {
         sku: input.sku,
         category: input.category,
         refUrl,
+        tags: input.tags ?? [],
         defaultPurchaseCost: String(input.defaultPurchaseCost),
         defaultSellPrice: String(input.defaultSellPrice),
       })
@@ -116,6 +120,7 @@ export async function updateProduct(
         ...(input.sku !== undefined && { sku: input.sku }),
         ...(input.category !== undefined && { category: input.category }),
         ...(refUrl !== undefined && { refUrl }),
+        ...(input.tags !== undefined && { tags: input.tags }),
         ...(input.defaultPurchaseCost !== undefined && {
           defaultPurchaseCost: String(input.defaultPurchaseCost),
         }),
