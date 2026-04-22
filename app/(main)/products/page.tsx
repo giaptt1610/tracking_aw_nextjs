@@ -1,8 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { Button, Card, Checkbox, Col, Image, Input, Row, Spin, Space, Tooltip } from 'antd'
-import { PlusOutlined, EditOutlined, LinkOutlined } from '@ant-design/icons'
+import { Button, Card, Checkbox, Col, Image, Input, Row, Spin, Tooltip, Typography } from 'antd'
+import { PlusOutlined, EditOutlined, LinkOutlined, PictureOutlined } from '@ant-design/icons'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { useProducts } from '@/hooks/useProducts'
 import { useTrackedProducts } from '@/hooks/useTrackedProducts'
@@ -10,6 +10,34 @@ import { ProductFormModal } from '@/components/products/ProductFormModal'
 import { DeleteProductButton } from '@/components/products/DeleteProductButton'
 import { formatVND } from '@/lib/utils/formatters'
 import type { Product } from '@/types/product'
+
+const { Text } = Typography
+
+function ProductCover({ product }: { product: Product }) {
+  const images = product.images.slice().sort((a, b) => a.sortOrder - b.sortOrder)
+  const coverUrl = images[0]?.url
+
+  if (!coverUrl) {
+    return (
+      <div className="flex items-center justify-center bg-gray-100" style={{ height: 160 }}>
+        <PictureOutlined style={{ fontSize: 36, color: '#d9d9d9' }} />
+      </div>
+    )
+  }
+
+  return (
+    <div style={{ height: 160, overflow: 'hidden', background: '#f5f5f5' }} onClick={(e) => e.stopPropagation()}>
+      <Image
+        src={coverUrl}
+        alt={product.name}
+        width="100%"
+        height={160}
+        style={{ objectFit: 'cover', display: 'block' }}
+        fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg=="
+      />
+    </div>
+  )
+}
 
 export default function ProductsPage() {
   const { products, isLoading, refresh } = useProducts()
@@ -57,24 +85,50 @@ export default function ProductsPage() {
         {categories.map((cat) => (
           <Card key={cat} title={cat} className="mb-4">
             <Row gutter={[12, 12]}>
-              {filteredProducts.filter((p) => p.category === cat).map((product) => (
-                <Col key={product.id} xs={24} sm={12} md={8} lg={6}>
-                  <Card
-                    size="small"
-                    className={'cursor-pointer ' + (trackedIds.includes(product.id) ? 'border-blue-400 bg-blue-50' : '')}
-                    onClick={() => toggleProduct(product.id)}
-                    extra={
-                      <Space onClick={(e) => e.stopPropagation()}>
+              {filteredProducts.filter((p) => p.category === cat).map((product) => {
+                const isTracked = trackedIds.includes(product.id)
+                return (
+                  <Col key={product.id} xs={12} sm={8} md={6} lg={4}>
+                    <Card
+                      size="small"
+                      hoverable
+                      className={'cursor-pointer transition-all ' + (isTracked ? 'border-blue-400' : '')}
+                      style={isTracked ? { background: '#eff6ff' } : undefined}
+                      cover={<ProductCover product={product} />}
+                      onClick={() => toggleProduct(product.id)}
+                      styles={{ body: { padding: '8px 10px' } }}
+                    >
+                      <div className="flex items-start justify-between gap-1 mb-1">
+                        <Text strong className="text-xs leading-tight flex-1" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                          {product.name}
+                        </Text>
+                        <Checkbox
+                          checked={isTracked}
+                          onChange={() => toggleProduct(product.id)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mt-0.5 flex-shrink-0"
+                        />
+                      </div>
+
+                      <div className="text-xs text-gray-400 mb-1">{product.sku}</div>
+
+                      <div className="flex justify-between text-xs mb-2">
+                        <span className="text-red-500">Nhập: {formatVND(product.defaultPurchaseCost)}</span>
+                        <span className="text-green-600">Bán: {formatVND(product.defaultSellPrice)}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                         {product.refUrl && (
                           <Tooltip title="Xem trang bán">
-                            <a href={product.refUrl} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                              <LinkOutlined className="text-blue-400" />
+                            <a href={product.refUrl} target="_blank" rel="noopener noreferrer">
+                              <Button size="small" icon={<LinkOutlined />} type="text" />
                             </a>
                           </Tooltip>
                         )}
                         <Button
                           size="small"
                           icon={<EditOutlined />}
+                          type="text"
                           onClick={() => openEdit(product)}
                         />
                         <DeleteProductButton
@@ -82,34 +136,11 @@ export default function ProductsPage() {
                           productName={product.name}
                           onSuccess={refresh}
                         />
-                        <Checkbox
-                          checked={trackedIds.includes(product.id)}
-                          onChange={() => toggleProduct(product.id)}
-                        />
-                      </Space>
-                    }
-                  >
-                    {product.images[0]?.url && (
-                      <div className="mb-2" onClick={(e) => e.stopPropagation()}>
-                        <Image
-                          src={product.images[0].url}
-                          alt={product.name}
-                          width={60}
-                          height={60}
-                          style={{ objectFit: 'cover', borderRadius: 4 }}
-                          fallback="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAABmJLR0QA/wD/AP+gvaeTAAAAi0lEQVRoge3BMQEAAADCoPVP7WsIoAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAeAMBuAABHgAAAABJRU5ErkJggg=="
-                        />
                       </div>
-                    )}
-                    <div className="font-medium text-sm">{product.name}</div>
-                    <div className="text-xs text-gray-500">{product.sku}</div>
-                    <div className="flex justify-between text-xs mt-1">
-                      <span className="text-red-500">Nhap: {formatVND(product.defaultPurchaseCost)}</span>
-                      <span className="text-green-600">Ban: {formatVND(product.defaultSellPrice)}</span>
-                    </div>
-                  </Card>
-                </Col>
-              ))}
+                    </Card>
+                  </Col>
+                )
+              })}
             </Row>
           </Card>
         ))}
