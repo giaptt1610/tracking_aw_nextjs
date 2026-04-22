@@ -1,6 +1,6 @@
 /**
  * Seed database with mock data
- * Usage: pnpm db:seed
+ * Usage: pnpm db:seed-local
  */
 import { config } from 'dotenv'
 import { resolve } from 'path'
@@ -30,6 +30,7 @@ async function seed() {
   console.log('Xóa dữ liệu cũ...')
   await db.delete(schema.orderItems)
   await db.delete(schema.orders)
+  await db.delete(schema.productImages)
   await db.delete(schema.products)
 
   // Insert products — DB generates real UUIDs
@@ -41,6 +42,7 @@ async function seed() {
         name: p.name,
         sku: p.sku,
         category: p.category,
+        refUrl: p.refUrl ?? null,
         defaultPurchaseCost: String(p.defaultPurchaseCost),
         defaultSellPrice: String(p.defaultSellPrice),
       }))
