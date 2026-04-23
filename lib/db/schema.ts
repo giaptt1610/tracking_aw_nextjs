@@ -22,6 +22,18 @@ export const productImages = pgTable("product_images", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
 })
 
+export const productFlavors = pgTable("product_flavors", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  purchaseCost: numeric("purchase_cost", { precision: 15, scale: 2 }).notNull(),
+  sellPrice: numeric("sell_price", { precision: 15, scale: 2 }).notNull(),
+  // 'active' | 'out_of_stock' — soft-delete: never hard-delete flavors used in orders
+  status: text("status").notNull().default("active"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+})
+
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   status: text("status").notNull(),
@@ -36,6 +48,9 @@ export const orderItems = pgTable("order_items", {
   orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
   productId: uuid("product_id").notNull().references(() => products.id),
   productName: text("product_name").notNull(),
+  // Snapshot: preserve flavor name even if flavor is later soft-deleted
+  flavorId: uuid("flavor_id").references(() => productFlavors.id, { onDelete: "set null" }),
+  flavorName: text("flavor_name"),
   quantity: integer("quantity").notNull(),
   purchaseCost: numeric("purchase_cost", { precision: 15, scale: 2 }).notNull(),
   sellPrice: numeric("sell_price", { precision: 15, scale: 2 }).notNull(),
@@ -43,10 +58,15 @@ export const orderItems = pgTable("order_items", {
 
 export const productsRelations = relations(products, ({ many }) => ({
   images: many(productImages),
+  flavors: many(productFlavors),
 }))
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
   product: one(products, { fields: [productImages.productId], references: [products.id] }),
+}))
+
+export const productFlavorsRelations = relations(productFlavors, ({ one }) => ({
+  product: one(products, { fields: [productFlavors.productId], references: [products.id] }),
 }))
 
 export const ordersRelations = relations(orders, ({ many }) => ({
@@ -60,6 +80,8 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
 export type Product = typeof products.$inferSelect
 export type ProductImage = typeof productImages.$inferSelect
 export type NewProductImage = typeof productImages.$inferInsert
+export type ProductFlavor = typeof productFlavors.$inferSelect
+export type NewProductFlavor = typeof productFlavors.$inferInsert
 export type NewProduct = typeof products.$inferInsert
 export type Order = typeof orders.$inferSelect
 export type NewOrder = typeof orders.$inferInsert

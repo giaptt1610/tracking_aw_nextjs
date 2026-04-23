@@ -1,6 +1,6 @@
 import { eq, gte, lte, and, desc, count, sum, ne, SQL } from 'drizzle-orm'
 import { db } from '@/lib/db'
-import { orders, orderItems } from '@/lib/db/schema'
+import { orders, orderItems, productFlavors } from '@/lib/db/schema'
 import type { OrderStatus, Order } from '@/types/order'
 
 // --- Pure helpers (exported for testing) ---
@@ -10,6 +10,8 @@ export type OrderRowItem = {
   orderId: string
   productId: string
   productName: string
+  flavorId: string | null
+  flavorName: string | null
   quantity: number
   purchaseCost: string | number
   sellPrice: string | number
@@ -41,6 +43,8 @@ export function mapOrderRow(row: OrderRow): Order {
     items: row.items.map((item) => ({
       productId: item.productId,
       productName: item.productName,
+      flavorId: item.flavorId ?? null,
+      flavorName: item.flavorName ?? null,
       quantity: item.quantity,
       purchaseCost: Number(item.purchaseCost),
       sellPrice: Number(item.sellPrice),
@@ -151,7 +155,10 @@ export async function getOrderTotals(filters: OrderFiltersInput = {}): Promise<O
 export type OrderItemInput = {
   productId: string
   productName: string
+  flavorId?: string | null
   quantity: number
+  // purchaseCost/sellPrice are ignored by the server when flavorId is provided;
+  // the server re-reads prices from DB to prevent client tampering.
   purchaseCost: number
   sellPrice: number
 }
@@ -168,44 +175,85 @@ export type UpdateOrderInput = {
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
-  const totalPurchaseCost = input.items.reduce(
-    (sum, it) => sum + it.purchaseCost * it.quantity,
-    0
-  )
-  const totalSellRevenue = input.items.reduce(
-    (sum, it) => sum + it.sellPrice * it.quantity,
-    0
-  )
+  return db.transaction(async (tx) => {
+    // Resolve prices server-side for flavor items; client-supplied prices are ignored
+    const resolvedItems = await Promise.all(
+      input.items.map(async (it) => {
+        if (!it.flavorId) {
+          return {
+            productId: it.productId,
+            productName: it.productName,
+            flavorId: null as string | null,
+            flavorName: null as string | null,
+            quantity: it.quantity,
+            purchaseCost: it.purchaseCost,
+            sellPrice: it.sellPrice,
+          }
+        }
 
-  const [order] = await db
-    .insert(orders)
-    .values({
-      status: input.status,
-      totalPurchaseCost: String(totalPurchaseCost),
-      totalSellRevenue: String(totalSellRevenue),
-      note: input.note ?? null,
-    })
-    .returning()
+        const [flavor] = await tx
+          .select()
+          .from(productFlavors)
+          .where(eq(productFlavors.id, it.flavorId))
+          .limit(1)
 
-  try {
-    await db.insert(orderItems).values(
-      input.items.map((it) => ({
+        if (!flavor) {
+          throw new Error('Phiên bản sản phẩm không tồn tại')
+        }
+        if (flavor.productId !== it.productId) {
+          throw new Error('Phiên bản không thuộc sản phẩm này')
+        }
+        if (flavor.status === 'out_of_stock') {
+          throw new Error(`Phiên bản "${flavor.name}" hiện không còn hàng`)
+        }
+
+        return {
+          productId: it.productId,
+          productName: it.productName,
+          flavorId: flavor.id,
+          flavorName: flavor.name,
+          quantity: it.quantity,
+          purchaseCost: Number(flavor.purchaseCost),
+          sellPrice: Number(flavor.sellPrice),
+        }
+      })
+    )
+
+    const totalPurchaseCost = resolvedItems.reduce(
+      (acc, it) => acc + it.purchaseCost * it.quantity,
+      0
+    )
+    const totalSellRevenue = resolvedItems.reduce(
+      (acc, it) => acc + it.sellPrice * it.quantity,
+      0
+    )
+
+    const [order] = await tx
+      .insert(orders)
+      .values({
+        status: input.status,
+        totalPurchaseCost: String(totalPurchaseCost),
+        totalSellRevenue: String(totalSellRevenue),
+        note: input.note ?? null,
+      })
+      .returning()
+
+    await tx.insert(orderItems).values(
+      resolvedItems.map((it) => ({
         orderId: order.id,
         productId: it.productId,
         productName: it.productName,
+        flavorId: it.flavorId,
+        flavorName: it.flavorName,
         quantity: it.quantity,
         purchaseCost: String(it.purchaseCost),
         sellPrice: String(it.sellPrice),
       }))
     )
-  } catch (err) {
-    // Clean up the order if items insert fails
-    await db.delete(orders).where(eq(orders.id, order.id))
-    throw err
-  }
 
-  const full = await getOrderById(order.id)
-  return full!
+    const full = await getOrderById(order.id)
+    return full!
+  })
 }
 
 export async function updateOrder(

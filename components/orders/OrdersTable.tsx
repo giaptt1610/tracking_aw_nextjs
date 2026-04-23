@@ -24,7 +24,14 @@ export function OrdersTable({ orders, total, page, pageSize, onPageChange, onRef
   const columns: ColumnsType<Order> = [
     { title: 'Mã đơn', dataIndex: 'id', key: 'id', width: 130 },
     { title: 'Ngày tạo', dataIndex: 'createdAt', key: 'createdAt', render: (v: string) => formatDate(v), width: 120 },
-    { title: 'Sản phẩm', key: 'items', render: (_: unknown, r: Order) => r.items.map((it) => it.productName).join(', ') },
+    {
+      title: 'Sản phẩm',
+      key: 'items',
+      render: (_: unknown, r: Order) =>
+        r.items
+          .map((it) => (it.flavorName ? `${it.productName} — ${it.flavorName}` : it.productName))
+          .join(', '),
+    },
     { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: Order['status']) => <OrderStatusTag status={v} />, width: 130 },
     { title: 'Doanh thu', dataIndex: 'totalSellRevenue', key: 'revenue', render: (v: number) => formatVND(v), align: 'right' as const, width: 140 },
     {

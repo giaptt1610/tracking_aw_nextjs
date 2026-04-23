@@ -16,6 +16,7 @@ const mockProduct = {
   refUrl: null,
   tags: [],
   images: [],
+  flavors: [],
   defaultPurchaseCost: 150000,
   defaultSellPrice: 250000,
   isTracked: false,
@@ -38,7 +39,9 @@ describe("createProductAction", () => {
     })
 
     expect(result.success).toBe(true)
-    expect(result.data).toEqual(mockProduct)
+    expect((result as Extract<typeof result, { success: true }>).data).toEqual(
+      mockProduct,
+    )
   })
 
   it("calls revalidatePath /products after create", async () => {
@@ -72,7 +75,9 @@ describe("createProductAction", () => {
     })
 
     expect(result.success).toBe(false)
-    expect(result.error).toBe("DB error")
+    expect((result as Extract<typeof result, { success: false }>).error).toBe(
+      "DB error",
+    )
   })
 })
 
@@ -90,7 +95,9 @@ describe("updateProductAction", () => {
     })
 
     expect(result.success).toBe(true)
-    expect(result.data?.name).toBe("Áo thun mới")
+    expect(
+      (result as Extract<typeof result, { success: true }>).data.name,
+    ).toBe("Áo thun mới")
   })
 
   it("returns error when product not found", async () => {
@@ -101,7 +108,9 @@ describe("updateProductAction", () => {
     const result = await updateProductAction("non-existent", { name: "X" })
 
     expect(result.success).toBe(false)
-    expect(result.error).toBeTruthy()
+    expect(
+      (result as Extract<typeof result, { success: false }>).error,
+    ).toBeTruthy()
   })
 
   it("calls revalidatePath /products after update", async () => {
@@ -140,7 +149,9 @@ describe("deleteProductAction", () => {
     const result = await deleteProductAction("prod-uuid-1")
 
     expect(result.success).toBe(false)
-    expect(result.error).toContain("đơn hàng")
+    expect(
+      (result as Extract<typeof result, { success: false }>).error,
+    ).toContain("đơn hàng")
   })
 
   it("calls revalidatePath /products after delete", async () => {

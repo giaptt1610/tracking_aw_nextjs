@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Select, Space, message } from 'antd'
+import { Button, Form, Input, InputNumber, Modal, Select, Space, Tag, message } from 'antd'
 import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons'
 import { createProductAction, updateProductAction } from '@/lib/actions/products'
 import type { Product } from '@/types/product'
@@ -13,6 +13,14 @@ interface ProductFormModalProps {
   onSuccess: () => void
 }
 
+interface FlavorFormValue {
+  id?: string
+  name: string
+  purchaseCost: number
+  sellPrice: number
+  status: 'active' | 'out_of_stock'
+}
+
 interface FormValues {
   name: string
   sku: string
@@ -22,7 +30,11 @@ interface FormValues {
   images: string[]
   defaultPurchaseCost: number
   defaultSellPrice: number
+  flavors: FlavorFormValue[]
 }
+
+const numberFormatter = (v: number | string | undefined) =>
+  String(v ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
 
 export function ProductFormModal({ open, product, onClose, onSuccess }: ProductFormModalProps) {
   const [form] = Form.useForm<FormValues>()
@@ -41,8 +53,25 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
               images: product.images.map((i) => i.url),
               defaultPurchaseCost: product.defaultPurchaseCost,
               defaultSellPrice: product.defaultSellPrice,
+              flavors: product.flavors.map((f) => ({
+                id: f.id,
+                name: f.name,
+                purchaseCost: f.purchaseCost,
+                sellPrice: f.sellPrice,
+                status: f.status,
+              })),
             }
-          : { name: '', sku: '', category: '', refUrl: undefined, tags: [], images: [], defaultPurchaseCost: undefined, defaultSellPrice: undefined }
+          : {
+              name: '',
+              sku: '',
+              category: '',
+              refUrl: undefined,
+              tags: [],
+              images: [],
+              defaultPurchaseCost: undefined,
+              defaultSellPrice: undefined,
+              flavors: [],
+            }
       )
     }
   }, [open, product, form])
@@ -54,6 +83,14 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
       refUrl: values.refUrl?.trim() || undefined,
       tags: values.tags ?? [],
       images: values.images ?? [],
+      flavors: (values.flavors ?? []).map((f, i) => ({
+        ...(f.id ? { id: f.id } : {}),
+        name: f.name,
+        purchaseCost: f.purchaseCost,
+        sellPrice: f.sellPrice,
+        status: f.status ?? 'active',
+        sortOrder: i,
+      })),
     }
     const result = isEdit
       ? await updateProductAction(product!.id, payload)
@@ -77,6 +114,7 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
       onOk={handleOk}
       onCancel={onClose}
       destroyOnClose
+      width={680}
     >
       <Form form={form} layout="vertical" className="mt-4">
         <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true, message: 'Nhập tên sản phẩm' }]}>
@@ -129,11 +167,99 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
             )}
           </Form.List>
         </Form.Item>
-        <Form.Item name="defaultPurchaseCost" label="Giá nhập (VNĐ)" rules={[{ required: true, message: 'Nhập giá nhập' }]}>
-          <InputNumber className="w-full" min={0} formatter={(v) => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
+        <Form.Item
+          name="defaultPurchaseCost"
+          label="Giá nhập mặc định (VNĐ)"
+          rules={[{ required: true, message: 'Nhập giá nhập' }]}
+        >
+          <InputNumber className="w-full" min={0} formatter={numberFormatter} />
         </Form.Item>
-        <Form.Item name="defaultSellPrice" label="Giá bán (VNĐ)" rules={[{ required: true, message: 'Nhập giá bán' }]}>
-          <InputNumber className="w-full" min={0} formatter={(v) => String(v).replace(/\B(?=(\d{3})+(?!\d))/g, ',')} />
+        <Form.Item
+          name="defaultSellPrice"
+          label="Giá bán mặc định (VNĐ)"
+          rules={[{ required: true, message: 'Nhập giá bán' }]}
+        >
+          <InputNumber className="w-full" min={0} formatter={numberFormatter} />
+        </Form.Item>
+
+        <Form.Item
+          label="Phiên bản / Hương vị"
+          tooltip="Mỗi phiên bản có giá riêng. Khi tạo đơn hàng, người dùng chọn phiên bản và giá tự động điền (không được sửa thủ công)."
+        >
+          <Form.List name="flavors">
+            {(fields, { add, remove }) => (
+              <>
+                {fields.map((field) => {
+                  const isExisting = !!form.getFieldValue(['flavors', field.name, 'id'])
+                  return (
+                    <div key={field.key} className="border rounded p-3 mb-2 bg-gray-50">
+                      <Form.Item name={[field.name, 'id']} hidden noStyle>
+                        <Input />
+                      </Form.Item>
+                      <Space align="start" wrap>
+                        <Form.Item
+                          name={[field.name, 'name']}
+                          rules={[{ required: true, message: 'Nhập tên' }]}
+                          noStyle
+                        >
+                          <Input placeholder="Tên phiên bản" style={{ width: 160 }} />
+                        </Form.Item>
+                        <Form.Item
+                          name={[field.name, 'purchaseCost']}
+                          rules={[{ required: true, message: 'Nhập giá nhập' }]}
+                          noStyle
+                        >
+                          <InputNumber
+                            min={0}
+                            placeholder="Giá nhập"
+                            formatter={numberFormatter}
+                            style={{ width: 130 }}
+                          />
+                        </Form.Item>
+                        <Form.Item
+                          name={[field.name, 'sellPrice']}
+                          rules={[{ required: true, message: 'Nhập giá bán' }]}
+                          noStyle
+                        >
+                          <InputNumber
+                            min={0}
+                            placeholder="Giá bán"
+                            formatter={numberFormatter}
+                            style={{ width: 130 }}
+                          />
+                        </Form.Item>
+                        <Form.Item name={[field.name, 'status']} noStyle initialValue="active">
+                          <Select
+                            style={{ width: 120 }}
+                            options={[
+                              { label: 'Còn hàng', value: 'active' },
+                              { label: 'Hết hàng', value: 'out_of_stock' },
+                            ]}
+                          />
+                        </Form.Item>
+                        {isExisting ? (
+                          <Tag color="blue" className="mt-1">Đã lưu</Tag>
+                        ) : (
+                          <MinusCircleOutlined
+                            onClick={() => remove(field.name)}
+                            className="text-red-400 mt-1"
+                          />
+                        )}
+                      </Space>
+                    </div>
+                  )
+                })}
+                <Button
+                  type="dashed"
+                  onClick={() => add({ status: 'active' })}
+                  icon={<PlusOutlined />}
+                  block
+                >
+                  Thêm phiên bản
+                </Button>
+              </>
+            )}
+          </Form.List>
         </Form.Item>
       </Form>
     </Modal>

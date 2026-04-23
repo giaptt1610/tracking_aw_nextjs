@@ -3,6 +3,8 @@ export type OrderStatus = 'pending' | 'confirmed' | 'shipping' | 'delivered' | '
 export interface OrderItem {
   productId: string
   productName: string
+  flavorId: string | null
+  flavorName: string | null
   quantity: number
   purchaseCost: number
   sellPrice: number

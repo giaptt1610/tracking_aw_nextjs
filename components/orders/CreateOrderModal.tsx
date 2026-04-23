@@ -9,11 +9,12 @@ import {
   Modal,
   Select,
   Table,
+  Tooltip,
   message,
 } from "antd"
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons"
+import { PlusOutlined, DeleteOutlined, WarningOutlined } from "@ant-design/icons"
 import { createOrderAction } from "@/lib/actions/orders"
-import type { Product } from "@/types/product"
+import type { Product, ProductFlavor } from "@/types/product"
 import type { OrderStatus } from "@/types/order"
 
 interface CreateOrderModalProps {
@@ -26,6 +27,8 @@ interface OrderItemRow {
   key: string
   productId: string
   productName: string
+  flavorId: string | null
+  flavorName: string | null
   quantity: number
   purchaseCost: number
   sellPrice: number
@@ -39,11 +42,7 @@ const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
   { label: "Đã hủy", value: "cancelled" },
 ]
 
-export function CreateOrderModal({
-  open,
-  onClose,
-  onSuccess,
-}: CreateOrderModalProps) {
+export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalProps) {
   const [form] = Form.useForm()
   const [products, setProducts] = useState<Product[]>([])
   const [items, setItems] = useState<OrderItemRow[]>([])
@@ -71,6 +70,8 @@ export function CreateOrderModal({
         key: String(Date.now()),
         productId: "",
         productName: "",
+        flavorId: null,
+        flavorName: null,
         quantity: 1,
         purchaseCost: 0,
         sellPrice: 0,
@@ -78,27 +79,33 @@ export function CreateOrderModal({
     ])
   }
 
-  const updateItem = (
-    key: string,
-    field: keyof OrderItemRow,
-    value: unknown,
-  ) => {
+  const updateItem = (key: string, patch: Partial<OrderItemRow>) => {
     setItems((prev) =>
-      prev.map((item) => {
-        if (item.key !== key) return item
-        if (field === "productId") {
-          const product = products.find((p) => p.id === value)
-          return {
-            ...item,
-            productId: product?.id ?? "",
-            productName: product?.name ?? "",
-            purchaseCost: product?.defaultPurchaseCost ?? 0,
-            sellPrice: product?.defaultSellPrice ?? 0,
-          }
-        }
-        return { ...item, [field]: value }
-      }),
+      prev.map((item) => (item.key !== key ? item : { ...item, ...patch }))
     )
+  }
+
+  const handleProductChange = (key: string, productId: string) => {
+    const product = products.find((p) => p.id === productId)
+    updateItem(key, {
+      productId: product?.id ?? "",
+      productName: product?.name ?? "",
+      flavorId: null,
+      flavorName: null,
+      purchaseCost: product?.defaultPurchaseCost ?? 0,
+      sellPrice: product?.defaultSellPrice ?? 0,
+    })
+  }
+
+  const handleFlavorChange = (key: string, flavorId: string, flavors: ProductFlavor[]) => {
+    const flavor = flavors.find((f) => f.id === flavorId)
+    if (!flavor) return
+    updateItem(key, {
+      flavorId: flavor.id,
+      flavorName: flavor.name,
+      purchaseCost: flavor.purchaseCost,
+      sellPrice: flavor.sellPrice,
+    })
   }
 
   const removeItem = (key: string) => {
@@ -115,20 +122,27 @@ export function CreateOrderModal({
       message.warning("Kiểm tra lại thông tin sản phẩm trong đơn hàng")
       return
     }
+    const missingFlavor = items.find((it) => {
+      const product = products.find((p) => p.id === it.productId)
+      return product && product.flavors.length > 0 && !it.flavorId
+    })
+    if (missingFlavor) {
+      message.warning("Vui lòng chọn phiên bản cho tất cả sản phẩm có phiên bản")
+      return
+    }
 
     setLoading(true)
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
-      items: items.map(
-        ({ productId, productName, quantity, purchaseCost, sellPrice }) => ({
-          productId,
-          productName,
-          quantity,
-          purchaseCost,
-          sellPrice,
-        }),
-      ),
+      items: items.map(({ productId, productName, flavorId, quantity, purchaseCost, sellPrice }) => ({
+        productId,
+        productName,
+        flavorId: flavorId ?? null,
+        quantity,
+        purchaseCost,
+        sellPrice,
+      })),
     })
     setLoading(false)
 
@@ -146,12 +160,13 @@ export function CreateOrderModal({
     {
       title: "Sản phẩm",
       key: "product",
+      width: 190,
       render: (_: unknown, row: OrderItemRow) => (
         <Select
           className="w-full"
           placeholder="Chọn sản phẩm"
           value={row.productId || undefined}
-          onChange={(v) => updateItem(row.key, "productId", v)}
+          onChange={(v) => handleProductChange(row.key, v)}
           options={products.map((p) => ({ label: p.name, value: p.id }))}
           showSearch
           filterOption={(input, opt) =>
@@ -161,14 +176,48 @@ export function CreateOrderModal({
       ),
     },
     {
+      title: "Phiên bản",
+      key: "flavor",
+      width: 155,
+      render: (_: unknown, row: OrderItemRow) => {
+        const product = products.find((p) => p.id === row.productId)
+        if (!product || product.flavors.length === 0) {
+          return <span className="text-gray-400 text-sm pl-1">—</span>
+        }
+        return (
+          <Select
+            className="w-full"
+            placeholder="Chọn phiên bản"
+            value={row.flavorId || undefined}
+            onChange={(v) => handleFlavorChange(row.key, v, product.flavors)}
+            options={product.flavors.map((f) => ({
+              label:
+                f.status === "out_of_stock" ? (
+                  <Tooltip title="Phiên bản này hiện không còn hàng">
+                    <span className="text-gray-400">
+                      <WarningOutlined className="mr-1 text-orange-400" />
+                      {f.name}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  f.name
+                ),
+              value: f.id,
+              disabled: f.status === "out_of_stock",
+            }))}
+          />
+        )
+      },
+    },
+    {
       title: "SL",
       key: "quantity",
-      width: 80,
+      width: 70,
       render: (_: unknown, row: OrderItemRow) => (
         <InputNumber
           min={1}
           value={row.quantity}
-          onChange={(v) => updateItem(row.key, "quantity", v ?? 1)}
+          onChange={(v) => updateItem(row.key, { quantity: v ?? 1 })}
           className="w-full"
         />
       ),
@@ -176,28 +225,38 @@ export function CreateOrderModal({
     {
       title: "Giá nhập",
       key: "purchaseCost",
-      width: 120,
-      render: (_: unknown, row: OrderItemRow) => (
-        <InputNumber
-          min={0}
-          value={row.purchaseCost}
-          onChange={(v) => updateItem(row.key, "purchaseCost", v ?? 0)}
-          className="w-full"
-        />
-      ),
+      width: 110,
+      render: (_: unknown, row: OrderItemRow) => {
+        const product = products.find((p) => p.id === row.productId)
+        const lockedByFlavor = !!product && product.flavors.length > 0 && !!row.flavorId
+        return (
+          <InputNumber
+            min={0}
+            value={row.purchaseCost}
+            onChange={(v) => updateItem(row.key, { purchaseCost: v ?? 0 })}
+            className="w-full"
+            disabled={lockedByFlavor}
+          />
+        )
+      },
     },
     {
       title: "Giá bán",
       key: "sellPrice",
-      width: 120,
-      render: (_: unknown, row: OrderItemRow) => (
-        <InputNumber
-          min={0}
-          value={row.sellPrice}
-          onChange={(v) => updateItem(row.key, "sellPrice", v ?? 0)}
-          className="w-full"
-        />
-      ),
+      width: 110,
+      render: (_: unknown, row: OrderItemRow) => {
+        const product = products.find((p) => p.id === row.productId)
+        const lockedByFlavor = !!product && product.flavors.length > 0 && !!row.flavorId
+        return (
+          <InputNumber
+            min={0}
+            value={row.sellPrice}
+            onChange={(v) => updateItem(row.key, { sellPrice: v ?? 0 })}
+            className="w-full"
+            disabled={lockedByFlavor}
+          />
+        )
+      },
     },
     {
       title: "",
@@ -226,7 +285,7 @@ export function CreateOrderModal({
         onClose()
       }}
       confirmLoading={loading}
-      width={700}
+      width={840}
       destroyOnClose
     >
       <Form
@@ -235,11 +294,7 @@ export function CreateOrderModal({
         className="mt-4"
         initialValues={{ status: "pending" }}
       >
-        <Form.Item
-          name="status"
-          label="Trạng thái"
-          rules={[{ required: true }]}
-        >
+        <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
           <Select options={STATUS_OPTIONS} />
         </Form.Item>
         <Form.Item name="note" label="Ghi chú">
@@ -255,13 +310,7 @@ export function CreateOrderModal({
         pagination={false}
         size="small"
       />
-      <Button
-        icon={<PlusOutlined />}
-        onClick={addItem}
-        className="mt-2"
-        type="dashed"
-        block
-      >
+      <Button icon={<PlusOutlined />} onClick={addItem} className="mt-2" type="dashed" block>
         Thêm sản phẩm
       </Button>
     </Modal>

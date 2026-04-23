@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   resolve: {
     alias: {
-      '@': 'D:/Dev/AI/tracking_aw/client_nextjs',
+      '@': 'D:/Develop/AI/tracking_aw_ai/client_nextjs',
     }
   },
   test: {
