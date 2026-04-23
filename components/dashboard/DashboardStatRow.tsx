@@ -22,24 +22,24 @@ function DashboardStatRow({ totals }: { totals: OrderTotals }) {
             <Col xs={24} sm={12} lg={6}>
                 <Card>
                     <Statistic
-                        title="Doanh thu"
-                        value={totals.totalRevenue}
-                        suffix="VND"
-                        formatter={(v) => Number(v).toLocaleString('vi-VN')}
-                        prefix={<RiseOutlined />}
-                        styles={{ content: { color: BRAND_COLORS.success } }}
-                    />
-                </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-                <Card>
-                    <Statistic
                         title="Chi phí"
                         value={totals.totalCost}
                         suffix="VND"
                         formatter={(v) => Number(v).toLocaleString('vi-VN')}
                         prefix={<FallOutlined />}
                         styles={{ content: { color: BRAND_COLORS.error } }}
+                    />
+                </Card>
+            </Col>
+            <Col xs={24} sm={12} lg={6}>
+                <Card>
+                    <Statistic
+                        title="Doanh thu"
+                        value={totals.totalRevenue}
+                        suffix="VND"
+                        formatter={(v) => Number(v).toLocaleString('vi-VN')}
+                        prefix={<RiseOutlined />}
+                        styles={{ content: { color: BRAND_COLORS.success } }}
                     />
                 </Card>
             </Col>

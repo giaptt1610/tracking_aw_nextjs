@@ -3,7 +3,7 @@ import { useState } from "react"
 import { Button, Space, Table } from "antd"
 import { EditOutlined } from "@ant-design/icons"
 import type { ColumnsType } from "antd/es/table"
-import { Order } from "@/types/order"
+import { Order, PaymentType } from "@/types/order"
 import { OrderStatusTag } from "./OrderStatusTag"
 import { EditOrderModal } from "./EditOrderModal"
 import { DeleteOrderButton } from "./DeleteOrderButton"
@@ -50,6 +50,17 @@ export function OrdersTable({
           .join(", "),
     },
     {
+      title: "Thanh toán",
+      dataIndex: "paymentType",
+      key: "paymentType",
+      width: 110,
+      render: (v: PaymentType | null | undefined) => {
+        if (v === "visa") return "Thẻ Visa"
+        if (v === "cash") return "Tiền mặt"
+        return <span className="text-gray-400">—</span>
+      },
+    },
+    {
       title: "Trạng thái",
       dataIndex: "status",
       key: "status",
@@ -57,24 +68,20 @@ export function OrdersTable({
       width: 130,
     },
     {
-      title: "Doanh thu",
-      dataIndex: "totalSellRevenue",
-      key: "revenue",
+      title: "Giá nhập",
+      dataIndex: "totalPurchaseCost",
+      key: "totalPurchaseCost",
       render: (v: number) => formatVND(v),
       align: "right" as const,
-      width: 140,
+      width: 130,
     },
     {
-      title: "Lợi nhuận",
-      dataIndex: "profit",
-      key: "profit",
+      title: "Giá bán",
+      dataIndex: "totalSellRevenue",
+      key: "totalSellRevenue",
+      render: (v: number) => formatVND(v),
       align: "right" as const,
       width: 130,
-      render: (v: number) => (
-        <span style={{ color: v >= 0 ? "#52c41a" : "#ff4d4f" }}>
-          {formatVND(v)}
-        </span>
-      ),
     },
     {
       title: "",

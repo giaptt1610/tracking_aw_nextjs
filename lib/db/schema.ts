@@ -1,5 +1,12 @@
-import { pgTable, uuid, text, numeric, integer, timestamp } from 'drizzle-orm/pg-core'
-import { relations } from 'drizzle-orm'
+import {
+  pgTable,
+  uuid,
+  text,
+  numeric,
+  integer,
+  timestamp,
+} from "drizzle-orm/pg-core"
+import { relations } from "drizzle-orm"
 
 export const products = pgTable("products", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -8,48 +15,81 @@ export const products = pgTable("products", {
   category: text("category").notNull(),
   refUrl: text("ref_url"),
   tags: text("tags").array().notNull().default([]),
-  defaultPurchaseCost: numeric("default_purchase_cost", { precision: 15, scale: 2 }).notNull(),
-  defaultSellPrice: numeric("default_sell_price", { precision: 15, scale: 2 }).notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow().notNull(),
+  defaultPurchaseCost: numeric("default_purchase_cost", {
+    precision: 15,
+    scale: 2,
+  }).notNull(),
+  defaultSellPrice: numeric("default_sell_price", {
+    precision: 15,
+    scale: 2,
+  }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 })
 
 export const productImages = pgTable("product_images", {
   id: uuid("id").primaryKey().defaultRandom(),
-  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
   url: text("url").notNull(),
   sortOrder: integer("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 })
 
 export const productFlavors = pgTable("product_flavors", {
   id: uuid("id").primaryKey().defaultRandom(),
-  productId: uuid("product_id").notNull().references(() => products.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   purchaseCost: numeric("purchase_cost", { precision: 15, scale: 2 }).notNull(),
   sellPrice: numeric("sell_price", { precision: 15, scale: 2 }).notNull(),
   // 'active' | 'out_of_stock' — soft-delete: never hard-delete flavors used in orders
   status: text("status").notNull().default("active"),
   sortOrder: integer("sort_order").notNull().default(0),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 })
 
 export const orders = pgTable("orders", {
   id: uuid("id").primaryKey().defaultRandom(),
   status: text("status").notNull(),
-  totalPurchaseCost: numeric("total_purchase_cost", { precision: 15, scale: 2 }).notNull(),
-  totalSellRevenue: numeric("total_sell_revenue", { precision: 15, scale: 2 }).notNull(),
+  totalPurchaseCost: numeric("total_purchase_cost", {
+    precision: 15,
+    scale: 2,
+  }).notNull(),
+  totalSellRevenue: numeric("total_sell_revenue", {
+    precision: 15,
+    scale: 2,
+  }).notNull(),
   note: text("note"),
-  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),
+  paymentType: text("payment_type"),
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .defaultNow()
+    .notNull(),
 })
 
 export const orderItems = pgTable("order_items", {
   id: uuid("id").primaryKey().defaultRandom(),
-  orderId: uuid("order_id").notNull().references(() => orders.id, { onDelete: "cascade" }),
-  productId: uuid("product_id").notNull().references(() => products.id),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  productId: uuid("product_id")
+    .notNull()
+    .references(() => products.id),
   productName: text("product_name").notNull(),
   // Snapshot: preserve flavor name even if flavor is later soft-deleted
-  flavorId: uuid("flavor_id").references(() => productFlavors.id, { onDelete: "set null" }),
+  flavorId: uuid("flavor_id").references(() => productFlavors.id, {
+    onDelete: "set null",
+  }),
   flavorName: text("flavor_name"),
   quantity: integer("quantity").notNull(),
   purchaseCost: numeric("purchase_cost", { precision: 15, scale: 2 }).notNull(),
@@ -62,11 +102,17 @@ export const productsRelations = relations(products, ({ many }) => ({
 }))
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
-  product: one(products, { fields: [productImages.productId], references: [products.id] }),
+  product: one(products, {
+    fields: [productImages.productId],
+    references: [products.id],
+  }),
 }))
 
 export const productFlavorsRelations = relations(productFlavors, ({ one }) => ({
-  product: one(products, { fields: [productFlavors.productId], references: [products.id] }),
+  product: one(products, {
+    fields: [productFlavors.productId],
+    references: [products.id],
+  }),
 }))
 
 export const ordersRelations = relations(orders, ({ many }) => ({

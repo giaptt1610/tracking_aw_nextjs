@@ -23,10 +23,10 @@ const FORMAT_MAP: Record<FilterType, string> = {
   year: 'YYYY',
 }
 
-function todayStr(): string {
+function currentMonthStr(): string {
   const now = new Date()
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
 }
 
 function parseDateValue(type: FilterType, str: string): Dayjs {
@@ -46,8 +46,8 @@ export default function DashboardTimeFilter() {
   const pathname = usePathname()
   const searchParams = useSearchParams()
 
-  const filterType = (searchParams.get('filterType') as FilterType | null) ?? 'day'
-  const dateStr = searchParams.get('date') ?? todayStr()
+  const filterType = (searchParams.get('filterType') as FilterType | null) ?? 'month'
+  const dateStr = searchParams.get('date') ?? currentMonthStr()
 
   function navigate(type: FilterType, date: Dayjs | null) {
     if (!date) return

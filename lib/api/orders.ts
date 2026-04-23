@@ -1,7 +1,7 @@
 import { eq, gte, lte, and, desc, count, sum, ne, SQL } from "drizzle-orm"
 import { db } from "@/lib/db"
 import { orders, orderItems, productFlavors } from "@/lib/db/schema"
-import type { OrderStatus, Order } from "@/types/order"
+import type { OrderStatus, Order, PaymentType } from "@/types/order"
 
 // --- Pure helpers (exported for testing) ---
 
@@ -23,8 +23,13 @@ export type OrderRow = {
   totalPurchaseCost: string | number
   totalSellRevenue: string | number
   note: string | null
+  paymentType: string | null
   createdAt: Date
   items: OrderRowItem[]
+}
+
+function isPaymentType(v: unknown): v is PaymentType {
+  return v === "cash" || v === "visa"
 }
 
 export function mapOrderRow(row: OrderRow): Order {
@@ -37,6 +42,7 @@ export function mapOrderRow(row: OrderRow): Order {
     totalSellRevenue,
     profit: totalSellRevenue - totalPurchaseCost,
     note: row.note ?? undefined,
+    paymentType: isPaymentType(row.paymentType) ? row.paymentType : null,
     createdAt:
       row.createdAt instanceof Date
         ? row.createdAt.toISOString()
@@ -158,6 +164,40 @@ export async function getOrderTotals(
   }
 }
 
+export type PaymentTypeCostRow = {
+  paymentType: 'cash' | 'visa' | 'unknown'
+  totalCost: number
+  orderCount: number
+}
+
+export async function getCostByPaymentType(
+  filters: OrderFiltersInput = {},
+): Promise<PaymentTypeCostRow[]> {
+  const conditions = buildOrderFilters(filters)
+  conditions.push(ne(orders.status, "cancelled"))
+  conditions.push(ne(orders.status, "invalid"))
+  const where = and(...conditions)
+
+  const rows = await db
+    .select({
+      paymentType: orders.paymentType,
+      totalCost: sum(orders.totalPurchaseCost),
+      orderCount: count(),
+    })
+    .from(orders)
+    .where(where)
+    .groupBy(orders.paymentType)
+
+  return rows.map((r) => ({
+    paymentType:
+      r.paymentType === "cash" || r.paymentType === "visa"
+        ? r.paymentType
+        : ("unknown" as const),
+    totalCost: Number(r.totalCost ?? 0),
+    orderCount: Number(r.orderCount ?? 0),
+  }))
+}
+
 // --- CRUD ---
 
 export type OrderItemInput = {
@@ -174,6 +214,7 @@ export type OrderItemInput = {
 export type CreateOrderInput = {
   status: OrderStatus
   note?: string
+  paymentType?: PaymentType | null
   createdAt?: string
   items: OrderItemInput[]
 }
@@ -181,6 +222,7 @@ export type CreateOrderInput = {
 export type UpdateOrderInput = {
   status?: OrderStatus
   note?: string
+  paymentType?: PaymentType | null
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
@@ -246,6 +288,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         totalPurchaseCost: String(totalPurchaseCost),
         totalSellRevenue: String(totalSellRevenue),
         note: input.note ?? null,
+        paymentType: input.paymentType ?? null,
         ...(createdAt && { createdAt }),
       })
       .returning()
@@ -277,6 +320,9 @@ export async function updateOrder(
     .set({
       ...(input.status !== undefined && { status: input.status }),
       ...(input.note !== undefined && { note: input.note }),
+      ...(input.paymentType !== undefined && {
+        paymentType: input.paymentType,
+      }),
     })
     .where(eq(orders.id, id))
     .returning()

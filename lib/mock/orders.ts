@@ -57,6 +57,7 @@ export function generateMockOrders(count = 50): Order[] {
       totalPurchaseCost,
       totalSellRevenue,
       profit: totalSellRevenue - totalPurchaseCost,
+      paymentType: null,
     })
   }
 

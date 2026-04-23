@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
   Table,
+  TimePicker,
   Tooltip,
   message,
 } from "antd"
@@ -21,7 +22,7 @@ import {
 } from "@ant-design/icons"
 import { createOrderAction } from "@/lib/actions/orders"
 import type { Product, ProductFlavor } from "@/types/product"
-import type { OrderStatus } from "@/types/order"
+import type { OrderStatus, PaymentType } from "@/types/order"
 
 interface CreateOrderModalProps {
   open: boolean
@@ -39,6 +40,11 @@ interface OrderItemRow {
   purchaseCost: number
   sellPrice: number
 }
+
+const PAYMENT_TYPE_OPTIONS: { label: string; value: PaymentType }[] = [
+  { label: "Tiền mặt", value: "cash" },
+  { label: "Thẻ Visa", value: "visa" },
+]
 
 const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
   { label: "Chờ xử lý", value: "pending" },
@@ -151,9 +157,13 @@ export function CreateOrderModal({
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
-      createdAt: values.createdAt.isSame(dayjs(), "day")
-        ? new Date().toISOString()
-        : values.createdAt.startOf("day").toISOString(),
+      paymentType: values.paymentType ?? null,
+      createdAt: values.createdAt
+        .hour((values.createdAtTime ?? dayjs()).hour())
+        .minute((values.createdAtTime ?? dayjs()).minute())
+        .second(0)
+        .millisecond(0)
+        .toISOString(),
       items: items.map(
         ({
           productId,
@@ -200,6 +210,16 @@ export function CreateOrderModal({
           filterOption={(input, opt) =>
             (opt?.label ?? "").toLowerCase().includes(input.toLowerCase())
           }
+          labelRender={({ label }) => (
+            <span className="whitespace-normal break-words leading-tight block py-0.5">
+              {label}
+            </span>
+          )}
+          optionRender={(option) => (
+            <span className="whitespace-normal break-words">
+              {option.label}
+            </span>
+          )}
         />
       ),
     },
@@ -322,7 +342,12 @@ export function CreateOrderModal({
         form={form}
         layout="vertical"
         className="mt-4"
-        initialValues={{ status: "pending", createdAt: dayjs().startOf("day") }}
+        initialValues={{
+          status: "pending",
+          paymentType: null,
+          createdAt: dayjs().startOf("day"),
+          createdAtTime: dayjs(),
+        }}
       >
         <div className="flex gap-4">
           <Form.Item
@@ -339,6 +364,14 @@ export function CreateOrderModal({
             />
           </Form.Item>
           <Form.Item
+            name="createdAtTime"
+            label="Giờ đặt hàng"
+            rules={[{ required: true, message: "Vui lòng chọn giờ" }]}
+            className="flex-1"
+          >
+            <TimePicker format="HH:mm" className="w-full" allowClear={false} />
+          </Form.Item>
+          <Form.Item
             name="status"
             label="Trạng thái"
             rules={[{ required: true }]}
@@ -347,6 +380,13 @@ export function CreateOrderModal({
             <Select options={STATUS_OPTIONS} />
           </Form.Item>
         </div>
+        <Form.Item name="paymentType" label="Hình thức thanh toán">
+          <Select
+            allowClear
+            placeholder="Không chọn"
+            options={PAYMENT_TYPE_OPTIONS}
+          />
+        </Form.Item>
         <Form.Item name="note" label="Ghi chú">
           <Input.TextArea rows={2} placeholder="Ghi chú (tùy chọn)" />
         </Form.Item>

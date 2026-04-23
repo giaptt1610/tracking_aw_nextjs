@@ -1,3 +1,11 @@
+export type PaymentTypeKey = 'cash' | 'visa' | 'unknown'
+
+export interface PaymentTypeCostStat {
+  paymentType: PaymentTypeKey
+  totalCost: number
+  orderCount: number
+}
+
 export interface ProductStat {
   productId: string
   productName: string
