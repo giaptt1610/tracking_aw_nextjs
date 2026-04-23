@@ -10,6 +10,7 @@ import {
   Modal,
   Select,
   Table,
+  TimePicker,
   Tooltip,
   message,
 } from "antd"
@@ -151,9 +152,12 @@ export function CreateOrderModal({
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
-      createdAt: values.createdAt.isSame(dayjs(), "day")
-        ? new Date().toISOString()
-        : values.createdAt.startOf("day").toISOString(),
+      createdAt: values.createdAt
+        .hour((values.createdAtTime ?? dayjs()).hour())
+        .minute((values.createdAtTime ?? dayjs()).minute())
+        .second(0)
+        .millisecond(0)
+        .toISOString(),
       items: items.map(
         ({
           productId,
@@ -200,6 +204,16 @@ export function CreateOrderModal({
           filterOption={(input, opt) =>
             (opt?.label ?? "").toLowerCase().includes(input.toLowerCase())
           }
+          labelRender={({ label }) => (
+            <span className="whitespace-normal break-words leading-tight block py-0.5">
+              {label}
+            </span>
+          )}
+          optionRender={(option) => (
+            <span className="whitespace-normal break-words">
+              {option.label}
+            </span>
+          )}
         />
       ),
     },
@@ -322,7 +336,11 @@ export function CreateOrderModal({
         form={form}
         layout="vertical"
         className="mt-4"
-        initialValues={{ status: "pending", createdAt: dayjs().startOf("day") }}
+        initialValues={{
+          status: "pending",
+          createdAt: dayjs().startOf("day"),
+          createdAtTime: dayjs(),
+        }}
       >
         <div className="flex gap-4">
           <Form.Item
@@ -337,6 +355,14 @@ export function CreateOrderModal({
               allowClear={false}
               disabledDate={(d) => d.isAfter(dayjs(), "day")}
             />
+          </Form.Item>
+          <Form.Item
+            name="createdAtTime"
+            label="Giờ đặt hàng"
+            rules={[{ required: true, message: "Vui lòng chọn giờ" }]}
+            className="flex-1"
+          >
+            <TimePicker format="HH:mm" className="w-full" allowClear={false} />
           </Form.Item>
           <Form.Item
             name="status"
