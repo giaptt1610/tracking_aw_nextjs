@@ -151,7 +151,9 @@ export function CreateOrderModal({
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
-      createdAt: values.createdAt.startOf("day").toISOString(),
+      createdAt: values.createdAt.isSame(dayjs(), "day")
+        ? new Date().toISOString()
+        : values.createdAt.startOf("day").toISOString(),
       items: items.map(
         ({
           productId,
