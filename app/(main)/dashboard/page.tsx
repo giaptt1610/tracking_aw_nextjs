@@ -11,8 +11,11 @@ interface DashboardPageProps {
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
-  const filterType = (searchParams.filterType as FilterType | undefined) ?? 'day'
-  const dateStr = searchParams.date ?? todayDateStr()
+  const filterType = (searchParams.filterType as FilterType | undefined) ?? 'month'
+  const now = new Date()
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const currentMonthStr = `${now.getFullYear()}-${pad(now.getMonth() + 1)}`
+  const dateStr = searchParams.date ?? currentMonthStr
   const { from, to } = getDateRange(filterType, dateStr)
 
   return (
