@@ -3,7 +3,7 @@
 import { useEffect } from "react"
 import { Form, Input, Modal, Select, message } from "antd"
 import { updateOrderAction } from "@/lib/actions/orders"
-import type { Order, OrderStatus } from "@/types/order"
+import type { Order, OrderStatus, PaymentType } from "@/types/order"
 
 interface EditOrderModalProps {
   open: boolean
@@ -11,6 +11,11 @@ interface EditOrderModalProps {
   onClose: () => void
   onSuccess: () => void
 }
+
+const PAYMENT_TYPE_OPTIONS: { label: string; value: PaymentType }[] = [
+  { label: "Tiền mặt", value: "cash" },
+  { label: "Thẻ Visa", value: "visa" },
+]
 
 const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
   { label: "Chờ xử lý", value: "pending" },
@@ -30,7 +35,11 @@ export function EditOrderModal({
 
   useEffect(() => {
     if (open && order) {
-      form.setFieldsValue({ status: order.status, note: order.note ?? "" })
+      form.setFieldsValue({
+        status: order.status,
+        note: order.note ?? "",
+        paymentType: order.paymentType ?? null,
+      })
     }
   }, [open, order, form])
 
@@ -40,6 +49,7 @@ export function EditOrderModal({
     const result = await updateOrderAction(order.id, {
       status: values.status,
       note: values.note || undefined,
+      paymentType: values.paymentType ?? null,
     })
 
     if (result.success) {
@@ -68,6 +78,13 @@ export function EditOrderModal({
           rules={[{ required: true }]}
         >
           <Select options={STATUS_OPTIONS} />
+        </Form.Item>
+        <Form.Item name="paymentType" label="Hình thức thanh toán">
+          <Select
+            allowClear
+            placeholder="Không chọn"
+            options={PAYMENT_TYPE_OPTIONS}
+          />
         </Form.Item>
         <Form.Item name="note" label="Ghi chú">
           <Input.TextArea rows={3} placeholder="Ghi chú (tùy chọn)" />

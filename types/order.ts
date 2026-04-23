@@ -6,6 +6,8 @@ export type OrderStatus =
   | "cancelled"
   | "invalid"
 
+export type PaymentType = "cash" | "visa"
+
 export interface OrderItem {
   productId: string
   productName: string
@@ -25,4 +27,5 @@ export interface Order {
   totalSellRevenue: number
   profit: number
   note?: string
+  paymentType?: PaymentType | null
 }

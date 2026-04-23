@@ -22,7 +22,7 @@ import {
 } from "@ant-design/icons"
 import { createOrderAction } from "@/lib/actions/orders"
 import type { Product, ProductFlavor } from "@/types/product"
-import type { OrderStatus } from "@/types/order"
+import type { OrderStatus, PaymentType } from "@/types/order"
 
 interface CreateOrderModalProps {
   open: boolean
@@ -40,6 +40,11 @@ interface OrderItemRow {
   purchaseCost: number
   sellPrice: number
 }
+
+const PAYMENT_TYPE_OPTIONS: { label: string; value: PaymentType }[] = [
+  { label: "Tiền mặt", value: "cash" },
+  { label: "Thẻ Visa", value: "visa" },
+]
 
 const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
   { label: "Chờ xử lý", value: "pending" },
@@ -152,6 +157,7 @@ export function CreateOrderModal({
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
+      paymentType: values.paymentType ?? null,
       createdAt: values.createdAt
         .hour((values.createdAtTime ?? dayjs()).hour())
         .minute((values.createdAtTime ?? dayjs()).minute())
@@ -338,6 +344,7 @@ export function CreateOrderModal({
         className="mt-4"
         initialValues={{
           status: "pending",
+          paymentType: null,
           createdAt: dayjs().startOf("day"),
           createdAtTime: dayjs(),
         }}
@@ -373,6 +380,13 @@ export function CreateOrderModal({
             <Select options={STATUS_OPTIONS} />
           </Form.Item>
         </div>
+        <Form.Item name="paymentType" label="Hình thức thanh toán">
+          <Select
+            allowClear
+            placeholder="Không chọn"
+            options={PAYMENT_TYPE_OPTIONS}
+          />
+        </Form.Item>
         <Form.Item name="note" label="Ghi chú">
           <Input.TextArea rows={2} placeholder="Ghi chú (tùy chọn)" />
         </Form.Item>

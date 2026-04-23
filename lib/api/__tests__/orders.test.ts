@@ -12,6 +12,7 @@ describe("mapOrderRow", () => {
       totalPurchaseCost: "100.00",
       totalSellRevenue: "150.00",
       note: null,
+      paymentType: null,
       createdAt: new Date("2024-01-15"),
       items: [
         {
@@ -46,6 +47,7 @@ describe("mapOrderRow", () => {
       totalPurchaseCost: "0.00",
       totalSellRevenue: "0.00",
       note: "test note",
+      paymentType: null,
       createdAt: new Date(),
       items: [],
     }
