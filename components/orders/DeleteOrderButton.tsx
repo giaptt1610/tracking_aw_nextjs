@@ -1,19 +1,22 @@
-'use client'
+"use client"
 
-import { Button, Popconfirm, message } from 'antd'
-import { DeleteOutlined } from '@ant-design/icons'
-import { deleteOrderAction } from '@/lib/actions/orders'
+import { Button, Popconfirm, message } from "antd"
+import { DeleteOutlined } from "@ant-design/icons"
+import { deleteOrderAction } from "@/lib/actions/orders"
 
 interface DeleteOrderButtonProps {
   orderId: string
   onSuccess: () => void
 }
 
-export function DeleteOrderButton({ orderId, onSuccess }: DeleteOrderButtonProps) {
+export function DeleteOrderButton({
+  orderId,
+  onSuccess,
+}: DeleteOrderButtonProps) {
   const handleConfirm = async () => {
     const result = await deleteOrderAction(orderId)
     if (result.success) {
-      message.success('Đã xóa đơn hàng')
+      message.success("Đã vô hiệu hóa đơn hàng")
       onSuccess()
     } else {
       message.error(result.error)
@@ -22,10 +25,10 @@ export function DeleteOrderButton({ orderId, onSuccess }: DeleteOrderButtonProps
 
   return (
     <Popconfirm
-      title="Xóa đơn hàng"
-      description="Xóa đơn hàng này? Hành động này không thể hoàn tác."
+      title="Vô hiệu hóa đơn hàng"
+      description="Đơn hàng sẽ được đánh dấu Không hợp lệ và không tính vào thống kê."
       onConfirm={handleConfirm}
-      okText="Xóa"
+      okText="Xác nhận"
       cancelText="Hủy"
       okButtonProps={{ danger: true }}
     >

@@ -136,6 +136,7 @@ export async function getOrderTotals(
 ): Promise<OrderTotals> {
   const conditions = buildOrderFilters(filters)
   conditions.push(ne(orders.status, "cancelled"))
+  conditions.push(ne(orders.status, "invalid"))
   const where = and(...conditions)
 
   const [row] = await db
@@ -285,10 +286,10 @@ export async function updateOrder(
 }
 
 export async function deleteOrder(id: string): Promise<boolean> {
-  // orderItems cascade-delete automatically (onDelete: 'cascade' in schema)
-  const result = await db
-    .delete(orders)
+  const [row] = await db
+    .update(orders)
+    .set({ status: "invalid" })
     .where(eq(orders.id, id))
     .returning({ id: orders.id })
-  return result.length > 0
+  return row !== undefined
 }

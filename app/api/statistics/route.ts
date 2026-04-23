@@ -1,20 +1,21 @@
-import { NextResponse } from 'next/server'
-import { db } from '@/lib/db'
-import { orders } from '@/lib/db/schema'
-import { sum, count, gte, lte, and } from 'drizzle-orm'
+import { NextResponse } from "next/server"
+import { db } from "@/lib/db"
+import { orders } from "@/lib/db/schema"
+import { sum, count, gte, lte, and, ne } from "drizzle-orm"
 
-export const dynamic = 'force-dynamic'
+export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
-    const fromDate = searchParams.get('fromDate')
-    const toDate = searchParams.get('toDate')
+    const fromDate = searchParams.get("fromDate")
+    const toDate = searchParams.get("toDate")
 
     const conditions = []
     if (fromDate) conditions.push(gte(orders.createdAt, new Date(fromDate)))
     if (toDate) conditions.push(lte(orders.createdAt, new Date(toDate)))
-    const where = conditions.length > 0 ? and(...conditions) : undefined
+    conditions.push(ne(orders.status, "invalid"))
+    const where = and(...conditions)
 
     const [totals] = await db
       .select({
@@ -42,14 +43,14 @@ export async function GET(request: Request) {
         totalProfit: totalRevenue - totalCost,
         orderCount: Number(totals.orderCount),
         ordersByStatus: Object.fromEntries(
-          statusRows.map((r) => [r.status, Number(r.count)])
+          statusRows.map((r) => [r.status, Number(r.count)]),
         ),
       },
     })
   } catch (error) {
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch statistics' },
-      { status: 500 }
+      { success: false, error: "Failed to fetch statistics" },
+      { status: 500 },
     )
   }
 }

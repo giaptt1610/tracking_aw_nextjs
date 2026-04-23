@@ -7,6 +7,7 @@ export const STATUS_COLOR: Record<OrderStatus, string> = {
   shipping: "orange",
   delivered: "green",
   cancelled: "red",
+  invalid: "volcano",
 }
 export const STATUS_LABEL: Record<OrderStatus, string> = {
   pending: "Chờ xử lý",
@@ -14,6 +15,7 @@ export const STATUS_LABEL: Record<OrderStatus, string> = {
   shipping: "Đang giao",
   delivered: "Đã giao",
   cancelled: "Đã hủy",
+  invalid: "Không hợp lệ",
 }
 
 export function OrderStatusTag({ status }: { status: OrderStatus }) {
