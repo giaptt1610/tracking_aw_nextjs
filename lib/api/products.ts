@@ -1,7 +1,12 @@
-import { eq } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { products, productImages, orderItems } from '@/lib/db/schema'
-import type { Product, ProductImage } from '@/types/product'
+import { eq, inArray } from "drizzle-orm"
+import { db } from "@/lib/db"
+import {
+  products,
+  productImages,
+  productFlavors,
+  orderItems,
+} from "@/lib/db/schema"
+import type { Product, ProductImage, ProductFlavor } from "@/types/product"
 
 // --- Pure helpers (exported for testing) ---
 
@@ -18,7 +23,33 @@ export type ProductRow = {
   updatedAt: Date
 }
 
-export function mapProductRow(row: ProductRow, images: ProductImage[] = []): Product {
+export type FlavorRow = {
+  id: string
+  productId: string
+  name: string
+  purchaseCost: string | number
+  sellPrice: string | number
+  status: string
+  sortOrder: number
+}
+
+export function mapFlavorRow(row: FlavorRow): ProductFlavor {
+  return {
+    id: row.id,
+    productId: row.productId,
+    name: row.name,
+    purchaseCost: Number(row.purchaseCost),
+    sellPrice: Number(row.sellPrice),
+    status: row.status as ProductFlavor["status"],
+    sortOrder: row.sortOrder,
+  }
+}
+
+export function mapProductRow(
+  row: ProductRow,
+  images: ProductImage[] = [],
+  flavors: ProductFlavor[] = [],
+): Product {
   return {
     id: row.id,
     name: row.name,
@@ -27,6 +58,7 @@ export function mapProductRow(row: ProductRow, images: ProductImage[] = []): Pro
     refUrl: row.refUrl,
     tags: row.tags,
     images,
+    flavors,
     defaultPurchaseCost: Number(row.defaultPurchaseCost),
     defaultSellPrice: Number(row.defaultSellPrice),
     isTracked: false,
@@ -37,21 +69,31 @@ export function mapProductRow(row: ProductRow, images: ProductImage[] = []): Pro
 
 export async function getProducts(): Promise<Product[]> {
   const rows = await db.query.products.findMany({
-    with: { images: { orderBy: (i, { asc }) => [asc(i.sortOrder)] } },
+    with: {
+      images: { orderBy: (i, { asc }) => [asc(i.sortOrder)] },
+      flavors: { orderBy: (f, { asc }) => [asc(f.sortOrder), asc(f.name)] },
+    },
   })
-  return rows.map((row) => mapProductRow(row, row.images))
+  return rows.map((row) =>
+    mapProductRow(row, row.images, row.flavors.map(mapFlavorRow)),
+  )
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
   const row = await db.query.products.findFirst({
     where: eq(products.id, id),
-    with: { images: { orderBy: (i, { asc }) => [asc(i.sortOrder)] } },
+    with: {
+      images: { orderBy: (i, { asc }) => [asc(i.sortOrder)] },
+      flavors: { orderBy: (f, { asc }) => [asc(f.sortOrder), asc(f.name)] },
+    },
   })
   if (!row) return null
-  return mapProductRow(row, row.images)
+  return mapProductRow(row, row.images, row.flavors.map(mapFlavorRow))
 }
 
-export async function getProductImages(productId: string): Promise<ProductImage[]> {
+export async function getProductImages(
+  productId: string,
+): Promise<ProductImage[]> {
   return db
     .select()
     .from(productImages)
@@ -59,7 +101,9 @@ export async function getProductImages(productId: string): Promise<ProductImage[
     .orderBy(productImages.sortOrder)
 }
 
-export async function getProductImagesBySku(sku: string): Promise<ProductImage[]> {
+export async function getProductImagesBySku(
+  sku: string,
+): Promise<ProductImage[]> {
   const product = await db.query.products.findFirst({
     where: eq(products.sku, sku),
   })
@@ -73,6 +117,15 @@ export async function getProductImagesBySku(sku: string): Promise<ProductImage[]
 
 // --- CRUD ---
 
+export type FlavorInput = {
+  id?: string
+  name: string
+  purchaseCost: number
+  sellPrice: number
+  status?: "active" | "out_of_stock"
+  sortOrder?: number
+}
+
 export type ProductInput = {
   name: string
   sku: string
@@ -80,6 +133,7 @@ export type ProductInput = {
   refUrl?: string | null
   tags?: string[]
   images?: string[]
+  flavors?: FlavorInput[]
   defaultPurchaseCost: number
   defaultSellPrice: number
 }
@@ -102,16 +156,18 @@ export async function createProduct(input: ProductInput): Promise<Product> {
       .returning()
 
     const imageRows = await insertImages(tx, row.id, input.images ?? [])
-    return mapProductRow(row, imageRows)
+    const flavorRows = await insertFlavors(tx, row.id, input.flavors ?? [])
+    return mapProductRow(row, imageRows, flavorRows.map(mapFlavorRow))
   })
 }
 
 export async function updateProduct(
   id: string,
-  input: Partial<ProductInput>
+  input: Partial<ProductInput>,
 ): Promise<Product | null> {
   return db.transaction(async (tx) => {
-    const refUrl = input.refUrl !== undefined ? (input.refUrl?.trim() || null) : undefined
+    const refUrl =
+      input.refUrl !== undefined ? input.refUrl?.trim() || null : undefined
 
     const [row] = await tx
       .update(products)
@@ -146,12 +202,23 @@ export async function updateProduct(
         .orderBy(productImages.sortOrder)
     }
 
-    return mapProductRow(row, imageRows)
+    let flavorRows: FlavorRow[]
+    if (input.flavors !== undefined) {
+      flavorRows = await upsertFlavors(tx, id, input.flavors)
+    } else {
+      flavorRows = await tx
+        .select()
+        .from(productFlavors)
+        .where(eq(productFlavors.productId, id))
+        .orderBy(productFlavors.sortOrder, productFlavors.name)
+    }
+
+    return mapProductRow(row, imageRows, flavorRows.map(mapFlavorRow))
   })
 }
 
 export async function deleteProduct(
-  id: string
+  id: string,
 ): Promise<{ success: boolean; error?: string }> {
   const usages = await db
     .select({ id: orderItems.id })
@@ -160,7 +227,10 @@ export async function deleteProduct(
     .limit(1)
 
   if (usages.length > 0) {
-    return { success: false, error: 'Sản phẩm đang được dùng trong đơn hàng, không thể xóa' }
+    return {
+      success: false,
+      error: "Sản phẩm đang được dùng trong đơn hàng, không thể xóa",
+    }
   }
 
   await db.delete(products).where(eq(products.id, id))
@@ -171,10 +241,92 @@ export async function deleteProduct(
 
 type TxClient = Parameters<Parameters<typeof db.transaction>[0]>[0]
 
-async function insertImages(tx: TxClient, productId: string, urls: string[]): Promise<ProductImage[]> {
+async function insertImages(
+  tx: TxClient,
+  productId: string,
+  urls: string[],
+): Promise<ProductImage[]> {
   if (urls.length === 0) return []
   return tx
     .insert(productImages)
     .values(urls.map((url, i) => ({ productId, url, sortOrder: i })))
     .returning()
+}
+
+async function insertFlavors(
+  tx: TxClient,
+  productId: string,
+  flavors: FlavorInput[],
+): Promise<FlavorRow[]> {
+  if (flavors.length === 0) return []
+  return tx
+    .insert(productFlavors)
+    .values(
+      flavors.map((f, i) => ({
+        productId,
+        name: f.name,
+        purchaseCost: String(f.purchaseCost),
+        sellPrice: String(f.sellPrice),
+        status: f.status ?? "active",
+        sortOrder: f.sortOrder ?? i,
+      })),
+    )
+    .returning()
+}
+
+// Upsert flavors: update existing (by id), insert new, soft-delete removed ones
+async function upsertFlavors(
+  tx: TxClient,
+  productId: string,
+  flavors: FlavorInput[],
+): Promise<FlavorRow[]> {
+  const existing = await tx
+    .select({ id: productFlavors.id })
+    .from(productFlavors)
+    .where(eq(productFlavors.productId, productId))
+
+  const existingIds = new Set(existing.map((r) => r.id))
+  const incomingIds = new Set(flavors.filter((f) => f.id).map((f) => f.id!))
+
+  // Soft-delete existing flavors removed from the list
+  const toSoftDelete = Array.from(existingIds).filter(
+    (id) => !incomingIds.has(id),
+  )
+  if (toSoftDelete.length > 0) {
+    await tx
+      .update(productFlavors)
+      .set({ status: "out_of_stock" })
+      .where(inArray(productFlavors.id, toSoftDelete))
+  }
+
+  for (let i = 0; i < flavors.length; i++) {
+    const flavor = flavors[i]
+    if (flavor.id && existingIds.has(flavor.id)) {
+      await tx
+        .update(productFlavors)
+        .set({
+          name: flavor.name,
+          purchaseCost: String(flavor.purchaseCost),
+          sellPrice: String(flavor.sellPrice),
+          status: flavor.status ?? "active",
+          sortOrder: flavor.sortOrder ?? i,
+        })
+        .where(eq(productFlavors.id, flavor.id))
+    } else {
+      await tx.insert(productFlavors).values({
+        productId,
+        name: flavor.name,
+        purchaseCost: String(flavor.purchaseCost),
+        sellPrice: String(flavor.sellPrice),
+        status: flavor.status ?? "active",
+        sortOrder: flavor.sortOrder ?? i,
+      })
+    }
+  }
+
+  return tx
+    .select()
+    .from(productFlavors)
+    .where(eq(productFlavors.productId, productId))
+    .orderBy(productFlavors.sortOrder, productFlavors.name)
 }

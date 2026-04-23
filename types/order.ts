@@ -1,8 +1,16 @@
-export type OrderStatus = 'pending' | 'confirmed' | 'shipping' | 'delivered' | 'cancelled'
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "shipping"
+  | "delivered"
+  | "cancelled"
+  | "invalid"
 
 export interface OrderItem {
   productId: string
   productName: string
+  flavorId: string | null
+  flavorName: string | null
   quantity: number
   purchaseCost: number
   sellPrice: number

@@ -2,9 +2,14 @@ import { getOrders } from "@/lib/api/orders";
 import { Suspense } from "react";
 import { RecentOrdersTable } from "./RecentOrdersTable";
 
-export default async function RecentOrdersServerComponent() {
+interface RecentOrdersServerComponentProps {
+  fromDate?: string
+  toDate?: string
+}
 
-    const { orders, total } = await getOrders({ pageSize: 10 });
+export default async function RecentOrdersServerComponent({ fromDate, toDate }: RecentOrdersServerComponentProps = {}) {
+
+    const { orders } = await getOrders({ pageSize: 10, from: fromDate, to: toDate });
 
 
     return (

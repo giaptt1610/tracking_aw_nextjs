@@ -59,7 +59,7 @@ export function EditOrderModal({
       cancelText="Hủy"
       onOk={handleOk}
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout="vertical" className="mt-4">
         <Form.Item

@@ -1,23 +1,33 @@
 import { Card } from 'antd'
+import { Suspense } from 'react'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DashboardStats } from '@/components/dashboard/DashboardStats'
-import { RecentOrdersTable } from '@/components/dashboard/RecentOrdersTable'
-import { getOrderTotals, getOrders } from '@/lib/api/orders'
 import RecentOrdersServerComponent from '@/components/dashboard/RecentOrdersServerComponent'
+import DashboardTimeFilter from '@/components/dashboard/DashboardTimeFilter'
+import { getDateRange, todayDateStr, type FilterType } from '@/lib/utils/dateRange'
 
-export default async function DashboardPage() {
-  // const [totals, { orders: recentOrders }] = await Promise.all([
-  //   getOrderTotals(),
-  //   getOrders({ pageSize: 5 }),
-  // ])
+interface DashboardPageProps {
+  searchParams: { filterType?: string; date?: string }
+}
+
+export default async function DashboardPage({ searchParams }: DashboardPageProps) {
+  const filterType = (searchParams.filterType as FilterType | undefined) ?? 'day'
+  const dateStr = searchParams.date ?? todayDateStr()
+  const { from, to } = getDateRange(filterType, dateStr)
 
   return (
     <div>
-      <PageHeader title="Tổng quan" />
-      <DashboardStats />
-      <Card title="Đơn hàng gần đây">
-        {/* <RecentOrdersTable orders={recentOrders} /> */}
-        <RecentOrdersServerComponent />
+      <PageHeader
+        title="Tổng quan"
+        extra={
+          <Suspense>
+            <DashboardTimeFilter />
+          </Suspense>
+        }
+      />
+      <DashboardStats fromDate={from} toDate={to} />
+      <Card title="Đơn hàng gần đây" className="mt-4">
+        <RecentOrdersServerComponent fromDate={from} toDate={to} />
       </Card>
     </div>
   )

@@ -1,11 +1,21 @@
-import { Tag } from 'antd'
-import { OrderStatus } from '@/types/order'
+import { Tag } from "antd"
+import { OrderStatus } from "@/types/order"
 
 export const STATUS_COLOR: Record<OrderStatus, string> = {
-  pending: 'default', confirmed: 'blue', shipping: 'orange', delivered: 'green', cancelled: 'red',
+  pending: "default",
+  confirmed: "blue",
+  shipping: "orange",
+  delivered: "green",
+  cancelled: "red",
+  invalid: "volcano",
 }
 export const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: 'Cho xu ly', confirmed: 'Da xac nhan', shipping: 'Dang giao', delivered: 'Da giao', cancelled: 'Da huy',
+  pending: "Chờ xử lý",
+  confirmed: "Đã xác nhận",
+  shipping: "Đang giao",
+  delivered: "Đã giao",
+  cancelled: "Đã hủy",
+  invalid: "Không hợp lệ",
 }
 
 export function OrderStatusTag({ status }: { status: OrderStatus }) {

@@ -8,9 +8,14 @@ import { getOrderTotals } from '@/lib/api/orders'
 import DashboardStatRow from './DashboardStatRow'
 
 
-export async function DashboardStats() {
+interface DashboardStatsProps {
+  fromDate?: string
+  toDate?: string
+}
 
-  const totals = await getOrderTotals()
+export async function DashboardStats({ fromDate, toDate }: DashboardStatsProps = {}) {
+
+  const totals = await getOrderTotals({ from: fromDate, to: toDate })
 
   return (
     <Suspense fallback={<div>Loading...</div>}>

@@ -12,10 +12,18 @@ import { OrderStatus } from '@/types/order'
 
 export default function OrdersPage() {
   const [status, setStatus] = useState<OrderStatus | undefined>()
+  const [from, setFrom] = useState<string | undefined>()
+  const [to, setTo] = useState<string | undefined>()
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [createOpen, setCreateOpen] = useState(false)
-  const { orders, total, refresh } = useOrders({ status, page, pageSize })
+  const { orders, total, refresh } = useOrders({ status, from, to, page, pageSize })
+
+  function handleDateFilterChange(f?: string, t?: string) {
+    setFrom(f)
+    setTo(t)
+    setPage(1)
+  }
 
   return (
     <div>
@@ -29,7 +37,11 @@ export default function OrdersPage() {
       />
       <Card>
         <div className="mb-4">
-          <OrderFilters status={status} onStatusChange={(v) => { setStatus(v); setPage(1) }} />
+          <OrderFilters
+            status={status}
+            onStatusChange={(v) => { setStatus(v); setPage(1) }}
+            onDateFilterChange={handleDateFilterChange}
+          />
         </div>
         <OrdersTable
           orders={orders}

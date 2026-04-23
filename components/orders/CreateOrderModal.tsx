@@ -3,17 +3,24 @@
 import { useEffect, useState } from "react"
 import {
   Button,
+  DatePicker,
   Form,
   Input,
   InputNumber,
   Modal,
   Select,
   Table,
+  Tooltip,
   message,
 } from "antd"
-import { PlusOutlined, DeleteOutlined } from "@ant-design/icons"
+import dayjs from "dayjs"
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  WarningOutlined,
+} from "@ant-design/icons"
 import { createOrderAction } from "@/lib/actions/orders"
-import type { Product } from "@/types/product"
+import type { Product, ProductFlavor } from "@/types/product"
 import type { OrderStatus } from "@/types/order"
 
 interface CreateOrderModalProps {
@@ -26,6 +33,8 @@ interface OrderItemRow {
   key: string
   productId: string
   productName: string
+  flavorId: string | null
+  flavorName: string | null
   quantity: number
   purchaseCost: number
   sellPrice: number
@@ -71,6 +80,8 @@ export function CreateOrderModal({
         key: String(Date.now()),
         productId: "",
         productName: "",
+        flavorId: null,
+        flavorName: null,
         quantity: 1,
         purchaseCost: 0,
         sellPrice: 0,
@@ -78,27 +89,37 @@ export function CreateOrderModal({
     ])
   }
 
-  const updateItem = (
-    key: string,
-    field: keyof OrderItemRow,
-    value: unknown,
-  ) => {
+  const updateItem = (key: string, patch: Partial<OrderItemRow>) => {
     setItems((prev) =>
-      prev.map((item) => {
-        if (item.key !== key) return item
-        if (field === "productId") {
-          const product = products.find((p) => p.id === value)
-          return {
-            ...item,
-            productId: product?.id ?? "",
-            productName: product?.name ?? "",
-            purchaseCost: product?.defaultPurchaseCost ?? 0,
-            sellPrice: product?.defaultSellPrice ?? 0,
-          }
-        }
-        return { ...item, [field]: value }
-      }),
+      prev.map((item) => (item.key !== key ? item : { ...item, ...patch })),
     )
+  }
+
+  const handleProductChange = (key: string, productId: string) => {
+    const product = products.find((p) => p.id === productId)
+    updateItem(key, {
+      productId: product?.id ?? "",
+      productName: product?.name ?? "",
+      flavorId: null,
+      flavorName: null,
+      purchaseCost: product?.defaultPurchaseCost ?? 0,
+      sellPrice: product?.defaultSellPrice ?? 0,
+    })
+  }
+
+  const handleFlavorChange = (
+    key: string,
+    flavorId: string,
+    flavors: ProductFlavor[],
+  ) => {
+    const flavor = flavors.find((f) => f.id === flavorId)
+    if (!flavor) return
+    updateItem(key, {
+      flavorId: flavor.id,
+      flavorName: flavor.name,
+      purchaseCost: flavor.purchaseCost,
+      sellPrice: flavor.sellPrice,
+    })
   }
 
   const removeItem = (key: string) => {
@@ -115,15 +136,36 @@ export function CreateOrderModal({
       message.warning("Kiểm tra lại thông tin sản phẩm trong đơn hàng")
       return
     }
+    const missingFlavor = items.find((it) => {
+      const product = products.find((p) => p.id === it.productId)
+      return product && product.flavors.length > 0 && !it.flavorId
+    })
+    if (missingFlavor) {
+      message.warning(
+        "Vui lòng chọn phiên bản cho tất cả sản phẩm có phiên bản",
+      )
+      return
+    }
 
     setLoading(true)
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
+      createdAt: values.createdAt.isSame(dayjs(), "day")
+        ? new Date().toISOString()
+        : values.createdAt.startOf("day").toISOString(),
       items: items.map(
-        ({ productId, productName, quantity, purchaseCost, sellPrice }) => ({
+        ({
           productId,
           productName,
+          flavorId,
+          quantity,
+          purchaseCost,
+          sellPrice,
+        }) => ({
+          productId,
+          productName,
+          flavorId: flavorId ?? null,
           quantity,
           purchaseCost,
           sellPrice,
@@ -146,12 +188,13 @@ export function CreateOrderModal({
     {
       title: "Sản phẩm",
       key: "product",
+      width: 190,
       render: (_: unknown, row: OrderItemRow) => (
         <Select
           className="w-full"
           placeholder="Chọn sản phẩm"
           value={row.productId || undefined}
-          onChange={(v) => updateItem(row.key, "productId", v)}
+          onChange={(v) => handleProductChange(row.key, v)}
           options={products.map((p) => ({ label: p.name, value: p.id }))}
           showSearch
           filterOption={(input, opt) =>
@@ -161,14 +204,48 @@ export function CreateOrderModal({
       ),
     },
     {
+      title: "Phiên bản",
+      key: "flavor",
+      width: 155,
+      render: (_: unknown, row: OrderItemRow) => {
+        const product = products.find((p) => p.id === row.productId)
+        if (!product || product.flavors.length === 0) {
+          return <span className="text-gray-400 text-sm pl-1">—</span>
+        }
+        return (
+          <Select
+            className="w-full"
+            placeholder="Chọn phiên bản"
+            value={row.flavorId || undefined}
+            onChange={(v) => handleFlavorChange(row.key, v, product.flavors)}
+            options={product.flavors.map((f) => ({
+              label:
+                f.status === "out_of_stock" ? (
+                  <Tooltip title="Phiên bản này hiện không còn hàng">
+                    <span className="text-gray-400">
+                      <WarningOutlined className="mr-1 text-orange-400" />
+                      {f.name}
+                    </span>
+                  </Tooltip>
+                ) : (
+                  f.name
+                ),
+              value: f.id,
+              disabled: f.status === "out_of_stock",
+            }))}
+          />
+        )
+      },
+    },
+    {
       title: "SL",
       key: "quantity",
-      width: 80,
+      width: 70,
       render: (_: unknown, row: OrderItemRow) => (
         <InputNumber
           min={1}
           value={row.quantity}
-          onChange={(v) => updateItem(row.key, "quantity", v ?? 1)}
+          onChange={(v) => updateItem(row.key, { quantity: v ?? 1 })}
           className="w-full"
         />
       ),
@@ -176,28 +253,40 @@ export function CreateOrderModal({
     {
       title: "Giá nhập",
       key: "purchaseCost",
-      width: 120,
-      render: (_: unknown, row: OrderItemRow) => (
-        <InputNumber
-          min={0}
-          value={row.purchaseCost}
-          onChange={(v) => updateItem(row.key, "purchaseCost", v ?? 0)}
-          className="w-full"
-        />
-      ),
+      width: 110,
+      render: (_: unknown, row: OrderItemRow) => {
+        const product = products.find((p) => p.id === row.productId)
+        const lockedByFlavor =
+          !!product && product.flavors.length > 0 && !!row.flavorId
+        return (
+          <InputNumber
+            min={0}
+            value={row.purchaseCost}
+            onChange={(v) => updateItem(row.key, { purchaseCost: v ?? 0 })}
+            className="w-full"
+            disabled={lockedByFlavor}
+          />
+        )
+      },
     },
     {
       title: "Giá bán",
       key: "sellPrice",
-      width: 120,
-      render: (_: unknown, row: OrderItemRow) => (
-        <InputNumber
-          min={0}
-          value={row.sellPrice}
-          onChange={(v) => updateItem(row.key, "sellPrice", v ?? 0)}
-          className="w-full"
-        />
-      ),
+      width: 110,
+      render: (_: unknown, row: OrderItemRow) => {
+        const product = products.find((p) => p.id === row.productId)
+        const lockedByFlavor =
+          !!product && product.flavors.length > 0 && !!row.flavorId
+        return (
+          <InputNumber
+            min={0}
+            value={row.sellPrice}
+            onChange={(v) => updateItem(row.key, { sellPrice: v ?? 0 })}
+            className="w-full"
+            disabled={lockedByFlavor}
+          />
+        )
+      },
     },
     {
       title: "",
@@ -226,22 +315,38 @@ export function CreateOrderModal({
         onClose()
       }}
       confirmLoading={loading}
-      width={700}
-      destroyOnClose
+      width={840}
+      destroyOnHidden
     >
       <Form
         form={form}
         layout="vertical"
         className="mt-4"
-        initialValues={{ status: "pending" }}
+        initialValues={{ status: "pending", createdAt: dayjs().startOf("day") }}
       >
-        <Form.Item
-          name="status"
-          label="Trạng thái"
-          rules={[{ required: true }]}
-        >
-          <Select options={STATUS_OPTIONS} />
-        </Form.Item>
+        <div className="flex gap-4">
+          <Form.Item
+            name="createdAt"
+            label="Ngày đặt hàng"
+            rules={[{ required: true, message: "Vui lòng chọn ngày" }]}
+            className="flex-1"
+          >
+            <DatePicker
+              format="DD/MM/YYYY"
+              className="w-full"
+              allowClear={false}
+              disabledDate={(d) => d.isAfter(dayjs(), "day")}
+            />
+          </Form.Item>
+          <Form.Item
+            name="status"
+            label="Trạng thái"
+            rules={[{ required: true }]}
+            className="flex-1"
+          >
+            <Select options={STATUS_OPTIONS} />
+          </Form.Item>
+        </div>
         <Form.Item name="note" label="Ghi chú">
           <Input.TextArea rows={2} placeholder="Ghi chú (tùy chọn)" />
         </Form.Item>
