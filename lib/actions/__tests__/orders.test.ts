@@ -92,6 +92,52 @@ describe("createOrderAction", () => {
       "Insert failed",
     )
   })
+
+  it("forwards createdAt to createOrder when provided", async () => {
+    const { createOrder } = await import("@/lib/api/orders")
+    vi.mocked(createOrder).mockResolvedValueOnce(mockOrder)
+
+    const { createOrderAction } = await import("@/lib/actions/orders")
+    await createOrderAction({
+      status: "pending",
+      createdAt: "2024-03-15T00:00:00.000Z",
+      items: [
+        {
+          productId: "prod-uuid-1",
+          productName: "Áo thun",
+          quantity: 1,
+          purchaseCost: 50000,
+          sellPrice: 75000,
+        },
+      ],
+    })
+
+    expect(createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ createdAt: "2024-03-15T00:00:00.000Z" }),
+    )
+  })
+
+  it("omits createdAt from createOrder when not provided", async () => {
+    const { createOrder } = await import("@/lib/api/orders")
+    vi.mocked(createOrder).mockResolvedValueOnce(mockOrder)
+
+    const { createOrderAction } = await import("@/lib/actions/orders")
+    await createOrderAction({
+      status: "pending",
+      items: [
+        {
+          productId: "prod-uuid-1",
+          productName: "Áo thun",
+          quantity: 1,
+          purchaseCost: 50000,
+          sellPrice: 75000,
+        },
+      ],
+    })
+
+    const call = vi.mocked(createOrder).mock.calls[0][0]
+    expect(call.createdAt).toBeUndefined()
+  })
 })
 
 describe("updateOrderAction", () => {

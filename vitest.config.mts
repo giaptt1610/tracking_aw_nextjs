@@ -1,10 +1,14 @@
 import { defineConfig } from 'vitest/config'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export default defineConfig({
   resolve: {
     alias: {
-      '@': 'D:/Develop/AI/tracking_aw_ai/client_nextjs',
-    }
+      '@': path.resolve(__dirname, '.'),
+    },
   },
   test: {
     environment: 'node',

@@ -1,7 +1,7 @@
-import { eq, gte, lte, and, desc, count, sum, ne, SQL } from 'drizzle-orm'
-import { db } from '@/lib/db'
-import { orders, orderItems, productFlavors } from '@/lib/db/schema'
-import type { OrderStatus, Order } from '@/types/order'
+import { eq, gte, lte, and, desc, count, sum, ne, SQL } from "drizzle-orm"
+import { db } from "@/lib/db"
+import { orders, orderItems, productFlavors } from "@/lib/db/schema"
+import type { OrderStatus, Order } from "@/types/order"
 
 // --- Pure helpers (exported for testing) ---
 
@@ -37,9 +37,10 @@ export function mapOrderRow(row: OrderRow): Order {
     totalSellRevenue,
     profit: totalSellRevenue - totalPurchaseCost,
     note: row.note ?? undefined,
-    createdAt: row.createdAt instanceof Date
-      ? row.createdAt.toISOString()
-      : String(row.createdAt),
+    createdAt:
+      row.createdAt instanceof Date
+        ? row.createdAt.toISOString()
+        : String(row.createdAt),
     items: row.items.map((item) => ({
       productId: item.productId,
       productName: item.productName,
@@ -82,7 +83,9 @@ export type GetOrdersOptions = {
   pageSize?: number
 }
 
-export async function getOrders(options: GetOrdersOptions = {}): Promise<{ orders: Order[]; total: number }> {
+export async function getOrders(
+  options: GetOrdersOptions = {},
+): Promise<{ orders: Order[]; total: number }> {
   const { page = 1, pageSize = 10 } = options
   const offset = (page - 1) * pageSize
 
@@ -105,7 +108,9 @@ export async function getOrders(options: GetOrdersOptions = {}): Promise<{ order
   ])
 
   return {
-    orders: rows.map((r) => mapOrderRow({ ...r, items: r.items as OrderRowItem[] })),
+    orders: rows.map((r) =>
+      mapOrderRow({ ...r, items: r.items as OrderRowItem[] }),
+    ),
     total: Number(total),
   }
 }
@@ -126,9 +131,11 @@ export type OrderTotals = {
   orderCount: number
 }
 
-export async function getOrderTotals(filters: OrderFiltersInput = {}): Promise<OrderTotals> {
+export async function getOrderTotals(
+  filters: OrderFiltersInput = {},
+): Promise<OrderTotals> {
   const conditions = buildOrderFilters(filters)
-  conditions.push(ne(orders.status, 'cancelled'))
+  conditions.push(ne(orders.status, "cancelled"))
   const where = and(...conditions)
 
   const [row] = await db
@@ -166,6 +173,7 @@ export type OrderItemInput = {
 export type CreateOrderInput = {
   status: OrderStatus
   note?: string
+  createdAt?: string
   items: OrderItemInput[]
 }
 
@@ -198,12 +206,12 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
           .limit(1)
 
         if (!flavor) {
-          throw new Error('Phiên bản sản phẩm không tồn tại')
+          throw new Error("Phiên bản sản phẩm không tồn tại")
         }
         if (flavor.productId !== it.productId) {
-          throw new Error('Phiên bản không thuộc sản phẩm này')
+          throw new Error("Phiên bản không thuộc sản phẩm này")
         }
-        if (flavor.status === 'out_of_stock') {
+        if (flavor.status === "out_of_stock") {
           throw new Error(`Phiên bản "${flavor.name}" hiện không còn hàng`)
         }
 
@@ -216,17 +224,19 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
           purchaseCost: Number(flavor.purchaseCost),
           sellPrice: Number(flavor.sellPrice),
         }
-      })
+      }),
     )
 
     const totalPurchaseCost = resolvedItems.reduce(
       (acc, it) => acc + it.purchaseCost * it.quantity,
-      0
+      0,
     )
     const totalSellRevenue = resolvedItems.reduce(
       (acc, it) => acc + it.sellPrice * it.quantity,
-      0
+      0,
     )
+
+    const createdAt = input.createdAt ? new Date(input.createdAt) : undefined
 
     const [order] = await tx
       .insert(orders)
@@ -235,6 +245,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         totalPurchaseCost: String(totalPurchaseCost),
         totalSellRevenue: String(totalSellRevenue),
         note: input.note ?? null,
+        ...(createdAt && { createdAt }),
       })
       .returning()
 
@@ -248,7 +259,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         quantity: it.quantity,
         purchaseCost: String(it.purchaseCost),
         sellPrice: String(it.sellPrice),
-      }))
+      })),
     )
 
     const full = await getOrderById(order.id)
@@ -258,7 +269,7 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
 
 export async function updateOrder(
   id: string,
-  input: UpdateOrderInput
+  input: UpdateOrderInput,
 ): Promise<Order | null> {
   const [row] = await db
     .update(orders)

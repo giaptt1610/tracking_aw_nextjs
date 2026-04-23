@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import {
   Button,
+  DatePicker,
   Form,
   Input,
   InputNumber,
@@ -12,6 +13,7 @@ import {
   Tooltip,
   message,
 } from "antd"
+import dayjs from "dayjs"
 import {
   PlusOutlined,
   DeleteOutlined,
@@ -149,6 +151,7 @@ export function CreateOrderModal({
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
+      createdAt: values.createdAt.startOf("day").toISOString(),
       items: items.map(
         ({
           productId,
@@ -317,15 +320,31 @@ export function CreateOrderModal({
         form={form}
         layout="vertical"
         className="mt-4"
-        initialValues={{ status: "pending" }}
+        initialValues={{ status: "pending", createdAt: dayjs().startOf("day") }}
       >
-        <Form.Item
-          name="status"
-          label="Trạng thái"
-          rules={[{ required: true }]}
-        >
-          <Select options={STATUS_OPTIONS} />
-        </Form.Item>
+        <div className="flex gap-4">
+          <Form.Item
+            name="createdAt"
+            label="Ngày đặt hàng"
+            rules={[{ required: true, message: "Vui lòng chọn ngày" }]}
+            className="flex-1"
+          >
+            <DatePicker
+              format="DD/MM/YYYY"
+              className="w-full"
+              allowClear={false}
+              disabledDate={(d) => d.isAfter(dayjs(), "day")}
+            />
+          </Form.Item>
+          <Form.Item
+            name="status"
+            label="Trạng thái"
+            rules={[{ required: true }]}
+            className="flex-1"
+          >
+            <Select options={STATUS_OPTIONS} />
+          </Form.Item>
+        </div>
         <Form.Item name="note" label="Ghi chú">
           <Input.TextArea rows={2} placeholder="Ghi chú (tùy chọn)" />
         </Form.Item>
