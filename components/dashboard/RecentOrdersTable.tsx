@@ -1,26 +1,60 @@
-'use client'
+"use client"
 
-import { Table, Tag } from 'antd'
-import type { ColumnsType } from 'antd/es/table'
-import { Order, OrderStatus } from '@/types/order'
-import { formatVND, formatDate } from '@/lib/utils/formatters'
-import { profitColor } from '@/lib/theme/colors'
-
-const STATUS_COLOR: Record<OrderStatus, string> = {
-  pending: 'default', confirmed: 'blue', shipping: 'orange', delivered: 'green', cancelled: 'red',
-}
-const STATUS_LABEL: Record<OrderStatus, string> = {
-  pending: 'Cho xu ly', confirmed: 'Da xac nhan', shipping: 'Dang giao', delivered: 'Da giao', cancelled: 'Da huy',
-}
+import { Table, Tag } from "antd"
+import type { ColumnsType } from "antd/es/table"
+import { Order, OrderItem, OrderStatus } from "@/types/order"
+import { formatVND, formatDateTime } from "@/lib/utils/formatters"
+import { getOrderProductNames } from "@/lib/utils/orderHelpers"
+import { STATUS_COLOR, STATUS_LABEL } from "@/components/orders/OrderStatusTag"
 
 const columns: ColumnsType<Order> = [
-  { title: 'Mã đơn', dataIndex: 'id', key: 'id', width: 120 },
-  { title: 'Ngày tạo', dataIndex: 'createdAt', key: 'createdAt', render: (v: string) => formatDate(v), width: 120 },
-  { title: 'Trạng thái', dataIndex: 'status', key: 'status', render: (v: OrderStatus) => <Tag color={STATUS_COLOR[v]}>{STATUS_LABEL[v]}</Tag>, width: 130 },
-  { title: 'Doanh thu', dataIndex: 'totalSellRevenue', key: 'totalSellRevenue', render: (v: number) => formatVND(v), align: 'right' as const },
-  { title: 'Lợi nhuận', dataIndex: 'profit', key: 'profit', render: (v: number) => <span style={{ color: profitColor(v) }}>{formatVND(v)}</span>, align: 'right' as const },
+  { title: "Mã đơn", dataIndex: "id", key: "id", width: 120 },
+  {
+    title: "Ngày tạo",
+    dataIndex: "createdAt",
+    key: "createdAt",
+    render: (v: string) => formatDateTime(v),
+    width: 160,
+  },
+  {
+    title: "Tên sản phẩm",
+    dataIndex: "items",
+    key: "productNames",
+    render: (items: OrderItem[]) => getOrderProductNames(items),
+  },
+  {
+    title: "Trạng thái",
+    dataIndex: "status",
+    key: "status",
+    render: (v: OrderStatus) => (
+      <Tag color={STATUS_COLOR[v]}>{STATUS_LABEL[v]}</Tag>
+    ),
+    width: 130,
+  },
+  {
+    title: "Giá nhập",
+    dataIndex: "totalPurchaseCost",
+    key: "totalPurchaseCost",
+    render: (v: number) => formatVND(v),
+    align: "right" as const,
+  },
+  {
+    title: "Giá bán lẻ",
+    dataIndex: "totalSellRevenue",
+    key: "totalSellRevenue",
+    render: (v: number) => formatVND(v),
+    align: "right" as const,
+  },
 ]
 
 export function RecentOrdersTable({ orders }: { orders: Order[] }) {
-  return <Table dataSource={orders} columns={columns} rowKey="id" pagination={false} size="small" />
+  return (
+    <Table
+      dataSource={orders}
+      columns={columns}
+      rowKey="id"
+      pagination={false}
+      size="small"
+    />
+  )
 }
