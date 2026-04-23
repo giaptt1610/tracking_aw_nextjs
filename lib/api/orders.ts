@@ -164,6 +164,40 @@ export async function getOrderTotals(
   }
 }
 
+export type PaymentTypeCostRow = {
+  paymentType: 'cash' | 'visa' | 'unknown'
+  totalCost: number
+  orderCount: number
+}
+
+export async function getCostByPaymentType(
+  filters: OrderFiltersInput = {},
+): Promise<PaymentTypeCostRow[]> {
+  const conditions = buildOrderFilters(filters)
+  conditions.push(ne(orders.status, "cancelled"))
+  conditions.push(ne(orders.status, "invalid"))
+  const where = and(...conditions)
+
+  const rows = await db
+    .select({
+      paymentType: orders.paymentType,
+      totalCost: sum(orders.totalPurchaseCost),
+      orderCount: count(),
+    })
+    .from(orders)
+    .where(where)
+    .groupBy(orders.paymentType)
+
+  return rows.map((r) => ({
+    paymentType:
+      r.paymentType === "cash" || r.paymentType === "visa"
+        ? r.paymentType
+        : ("unknown" as const),
+    totalCost: Number(r.totalCost ?? 0),
+    orderCount: Number(r.orderCount ?? 0),
+  }))
+}
+
 // --- CRUD ---
 
 export type OrderItemInput = {
