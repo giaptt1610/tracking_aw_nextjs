@@ -12,7 +12,11 @@ import {
   Tooltip,
   message,
 } from "antd"
-import { PlusOutlined, DeleteOutlined, WarningOutlined } from "@ant-design/icons"
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  WarningOutlined,
+} from "@ant-design/icons"
 import { createOrderAction } from "@/lib/actions/orders"
 import type { Product, ProductFlavor } from "@/types/product"
 import type { OrderStatus } from "@/types/order"
@@ -42,7 +46,11 @@ const STATUS_OPTIONS: { label: string; value: OrderStatus }[] = [
   { label: "Đã hủy", value: "cancelled" },
 ]
 
-export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalProps) {
+export function CreateOrderModal({
+  open,
+  onClose,
+  onSuccess,
+}: CreateOrderModalProps) {
   const [form] = Form.useForm()
   const [products, setProducts] = useState<Product[]>([])
   const [items, setItems] = useState<OrderItemRow[]>([])
@@ -81,7 +89,7 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
 
   const updateItem = (key: string, patch: Partial<OrderItemRow>) => {
     setItems((prev) =>
-      prev.map((item) => (item.key !== key ? item : { ...item, ...patch }))
+      prev.map((item) => (item.key !== key ? item : { ...item, ...patch })),
     )
   }
 
@@ -97,7 +105,11 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
     })
   }
 
-  const handleFlavorChange = (key: string, flavorId: string, flavors: ProductFlavor[]) => {
+  const handleFlavorChange = (
+    key: string,
+    flavorId: string,
+    flavors: ProductFlavor[],
+  ) => {
     const flavor = flavors.find((f) => f.id === flavorId)
     if (!flavor) return
     updateItem(key, {
@@ -127,7 +139,9 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
       return product && product.flavors.length > 0 && !it.flavorId
     })
     if (missingFlavor) {
-      message.warning("Vui lòng chọn phiên bản cho tất cả sản phẩm có phiên bản")
+      message.warning(
+        "Vui lòng chọn phiên bản cho tất cả sản phẩm có phiên bản",
+      )
       return
     }
 
@@ -135,14 +149,23 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
     const result = await createOrderAction({
       status: values.status,
       note: values.note || undefined,
-      items: items.map(({ productId, productName, flavorId, quantity, purchaseCost, sellPrice }) => ({
-        productId,
-        productName,
-        flavorId: flavorId ?? null,
-        quantity,
-        purchaseCost,
-        sellPrice,
-      })),
+      items: items.map(
+        ({
+          productId,
+          productName,
+          flavorId,
+          quantity,
+          purchaseCost,
+          sellPrice,
+        }) => ({
+          productId,
+          productName,
+          flavorId: flavorId ?? null,
+          quantity,
+          purchaseCost,
+          sellPrice,
+        }),
+      ),
     })
     setLoading(false)
 
@@ -228,7 +251,8 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
       width: 110,
       render: (_: unknown, row: OrderItemRow) => {
         const product = products.find((p) => p.id === row.productId)
-        const lockedByFlavor = !!product && product.flavors.length > 0 && !!row.flavorId
+        const lockedByFlavor =
+          !!product && product.flavors.length > 0 && !!row.flavorId
         return (
           <InputNumber
             min={0}
@@ -246,7 +270,8 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
       width: 110,
       render: (_: unknown, row: OrderItemRow) => {
         const product = products.find((p) => p.id === row.productId)
-        const lockedByFlavor = !!product && product.flavors.length > 0 && !!row.flavorId
+        const lockedByFlavor =
+          !!product && product.flavors.length > 0 && !!row.flavorId
         return (
           <InputNumber
             min={0}
@@ -286,7 +311,7 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
       }}
       confirmLoading={loading}
       width={840}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}
@@ -294,7 +319,11 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
         className="mt-4"
         initialValues={{ status: "pending" }}
       >
-        <Form.Item name="status" label="Trạng thái" rules={[{ required: true }]}>
+        <Form.Item
+          name="status"
+          label="Trạng thái"
+          rules={[{ required: true }]}
+        >
           <Select options={STATUS_OPTIONS} />
         </Form.Item>
         <Form.Item name="note" label="Ghi chú">
@@ -310,7 +339,13 @@ export function CreateOrderModal({ open, onClose, onSuccess }: CreateOrderModalP
         pagination={false}
         size="small"
       />
-      <Button icon={<PlusOutlined />} onClick={addItem} className="mt-2" type="dashed" block>
+      <Button
+        icon={<PlusOutlined />}
+        onClick={addItem}
+        className="mt-2"
+        type="dashed"
+        block
+      >
         Thêm sản phẩm
       </Button>
     </Modal>

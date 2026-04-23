@@ -1,10 +1,23 @@
-'use client'
+"use client"
 
-import { useEffect } from 'react'
-import { Button, Form, Input, InputNumber, Modal, Select, Space, Tag, message } from 'antd'
-import { MinusCircleOutlined, PlusOutlined } from '@ant-design/icons'
-import { createProductAction, updateProductAction } from '@/lib/actions/products'
-import type { Product } from '@/types/product'
+import { useEffect } from "react"
+import {
+  Button,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Select,
+  Space,
+  Tag,
+  message,
+} from "antd"
+import { MinusCircleOutlined, PlusOutlined } from "@ant-design/icons"
+import {
+  createProductAction,
+  updateProductAction,
+} from "@/lib/actions/products"
+import type { Product } from "@/types/product"
 
 interface ProductFormModalProps {
   open: boolean
@@ -18,7 +31,7 @@ interface FlavorFormValue {
   name: string
   purchaseCost: number
   sellPrice: number
-  status: 'active' | 'out_of_stock'
+  status: "active" | "out_of_stock"
 }
 
 interface FormValues {
@@ -34,9 +47,14 @@ interface FormValues {
 }
 
 const numberFormatter = (v: number | string | undefined) =>
-  String(v ?? '').replace(/\B(?=(\d{3})+(?!\d))/g, ',')
+  String(v ?? "").replace(/\B(?=(\d{3})+(?!\d))/g, ",")
 
-export function ProductFormModal({ open, product, onClose, onSuccess }: ProductFormModalProps) {
+export function ProductFormModal({
+  open,
+  product,
+  onClose,
+  onSuccess,
+}: ProductFormModalProps) {
   const [form] = Form.useForm<FormValues>()
   const isEdit = !!product
 
@@ -62,16 +80,16 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
               })),
             }
           : {
-              name: '',
-              sku: '',
-              category: '',
+              name: "",
+              sku: "",
+              category: "",
               refUrl: undefined,
               tags: [],
               images: [],
               defaultPurchaseCost: undefined,
               defaultSellPrice: undefined,
               flavors: [],
-            }
+            },
       )
     }
   }, [open, product, form])
@@ -88,7 +106,7 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
         name: f.name,
         purchaseCost: f.purchaseCost,
         sellPrice: f.sellPrice,
-        status: f.status ?? 'active',
+        status: f.status ?? "active",
         sortOrder: i,
       })),
     }
@@ -97,7 +115,9 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
       : await createProductAction(payload)
 
     if (result.success) {
-      message.success(isEdit ? 'Cập nhật sản phẩm thành công' : 'Thêm sản phẩm thành công')
+      message.success(
+        isEdit ? "Cập nhật sản phẩm thành công" : "Thêm sản phẩm thành công",
+      )
       onSuccess()
       onClose()
     } else {
@@ -108,28 +128,40 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
   return (
     <Modal
       open={open}
-      title={isEdit ? 'Sửa sản phẩm' : 'Thêm sản phẩm'}
-      okText={isEdit ? 'Lưu' : 'Thêm'}
+      title={isEdit ? "Sửa sản phẩm" : "Thêm sản phẩm"}
+      okText={isEdit ? "Lưu" : "Thêm"}
       cancelText="Hủy"
       onOk={handleOk}
       onCancel={onClose}
-      destroyOnClose
+      destroyOnHidden
       width={680}
     >
       <Form form={form} layout="vertical" className="mt-4">
-        <Form.Item name="name" label="Tên sản phẩm" rules={[{ required: true, message: 'Nhập tên sản phẩm' }]}>
+        <Form.Item
+          name="name"
+          label="Tên sản phẩm"
+          rules={[{ required: true, message: "Nhập tên sản phẩm" }]}
+        >
           <Input placeholder="VD: Áo thun basic" />
         </Form.Item>
-        <Form.Item name="sku" label="SKU" rules={[{ required: true, message: 'Nhập SKU' }]}>
+        <Form.Item
+          name="sku"
+          label="SKU"
+          rules={[{ required: true, message: "Nhập SKU" }]}
+        >
           <Input placeholder="VD: AT-001" />
         </Form.Item>
-        <Form.Item name="category" label="Danh mục" rules={[{ required: true, message: 'Nhập danh mục' }]}>
+        <Form.Item
+          name="category"
+          label="Danh mục"
+          rules={[{ required: true, message: "Nhập danh mục" }]}
+        >
           <Input placeholder="VD: Quần áo" />
         </Form.Item>
         <Form.Item
           name="refUrl"
           label="Link sản phẩm"
-          rules={[{ type: 'url', message: 'URL không hợp lệ' }]}
+          rules={[{ type: "url", message: "URL không hợp lệ" }]}
         >
           <Input placeholder="https://shopee.vn/..." />
         </Form.Item>
@@ -141,7 +173,7 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
           <Select
             mode="tags"
             placeholder="VD: xương, khớp, glucosamine, canxi"
-            tokenSeparators={[',']}
+            tokenSeparators={[","]}
           />
         </Form.Item>
         <Form.Item label="Ảnh sản phẩm">
@@ -149,18 +181,30 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
             {(fields, { add, remove }) => (
               <>
                 {fields.map((field) => (
-                  <Space key={field.key} align="baseline" className="mb-2 w-full">
+                  <Space
+                    key={field.key}
+                    align="baseline"
+                    className="mb-2 w-full"
+                  >
                     <Form.Item
                       {...field}
                       noStyle
-                      rules={[{ type: 'url', message: 'URL không hợp lệ' }]}
+                      rules={[{ type: "url", message: "URL không hợp lệ" }]}
                     >
                       <Input placeholder="https://..." style={{ width: 360 }} />
                     </Form.Item>
-                    <MinusCircleOutlined onClick={() => remove(field.name)} className="text-red-400" />
+                    <MinusCircleOutlined
+                      onClick={() => remove(field.name)}
+                      className="text-red-400"
+                    />
                   </Space>
                 ))}
-                <Button type="dashed" onClick={() => add()} icon={<PlusOutlined />} block>
+                <Button
+                  type="dashed"
+                  onClick={() => add()}
+                  icon={<PlusOutlined />}
+                  block
+                >
                   Thêm ảnh
                 </Button>
               </>
@@ -170,14 +214,14 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
         <Form.Item
           name="defaultPurchaseCost"
           label="Giá nhập mặc định (VNĐ)"
-          rules={[{ required: true, message: 'Nhập giá nhập' }]}
+          rules={[{ required: true, message: "Nhập giá nhập" }]}
         >
           <InputNumber className="w-full" min={0} formatter={numberFormatter} />
         </Form.Item>
         <Form.Item
           name="defaultSellPrice"
           label="Giá bán mặc định (VNĐ)"
-          rules={[{ required: true, message: 'Nhập giá bán' }]}
+          rules={[{ required: true, message: "Nhập giá bán" }]}
         >
           <InputNumber className="w-full" min={0} formatter={numberFormatter} />
         </Form.Item>
@@ -190,23 +234,33 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
             {(fields, { add, remove }) => (
               <>
                 {fields.map((field) => {
-                  const isExisting = !!form.getFieldValue(['flavors', field.name, 'id'])
+                  const isExisting = !!form.getFieldValue([
+                    "flavors",
+                    field.name,
+                    "id",
+                  ])
                   return (
-                    <div key={field.key} className="border rounded p-3 mb-2 bg-gray-50">
-                      <Form.Item name={[field.name, 'id']} hidden noStyle>
+                    <div
+                      key={field.key}
+                      className="border rounded p-3 mb-2 bg-gray-50"
+                    >
+                      <Form.Item name={[field.name, "id"]} hidden noStyle>
                         <Input />
                       </Form.Item>
                       <Space align="start" wrap>
                         <Form.Item
-                          name={[field.name, 'name']}
-                          rules={[{ required: true, message: 'Nhập tên' }]}
+                          name={[field.name, "name"]}
+                          rules={[{ required: true, message: "Nhập tên" }]}
                           noStyle
                         >
-                          <Input placeholder="Tên phiên bản" style={{ width: 160 }} />
+                          <Input
+                            placeholder="Tên phiên bản"
+                            style={{ width: 160 }}
+                          />
                         </Form.Item>
                         <Form.Item
-                          name={[field.name, 'purchaseCost']}
-                          rules={[{ required: true, message: 'Nhập giá nhập' }]}
+                          name={[field.name, "purchaseCost"]}
+                          rules={[{ required: true, message: "Nhập giá nhập" }]}
                           noStyle
                         >
                           <InputNumber
@@ -217,8 +271,8 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
                           />
                         </Form.Item>
                         <Form.Item
-                          name={[field.name, 'sellPrice']}
-                          rules={[{ required: true, message: 'Nhập giá bán' }]}
+                          name={[field.name, "sellPrice"]}
+                          rules={[{ required: true, message: "Nhập giá bán" }]}
                           noStyle
                         >
                           <InputNumber
@@ -228,17 +282,23 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
                             style={{ width: 130 }}
                           />
                         </Form.Item>
-                        <Form.Item name={[field.name, 'status']} noStyle initialValue="active">
+                        <Form.Item
+                          name={[field.name, "status"]}
+                          noStyle
+                          initialValue="active"
+                        >
                           <Select
                             style={{ width: 120 }}
                             options={[
-                              { label: 'Còn hàng', value: 'active' },
-                              { label: 'Hết hàng', value: 'out_of_stock' },
+                              { label: "Còn hàng", value: "active" },
+                              { label: "Hết hàng", value: "out_of_stock" },
                             ]}
                           />
                         </Form.Item>
                         {isExisting ? (
-                          <Tag color="blue" className="mt-1">Đã lưu</Tag>
+                          <Tag color="blue" className="mt-1">
+                            Đã lưu
+                          </Tag>
                         ) : (
                           <MinusCircleOutlined
                             onClick={() => remove(field.name)}
@@ -251,7 +311,7 @@ export function ProductFormModal({ open, product, onClose, onSuccess }: ProductF
                 })}
                 <Button
                   type="dashed"
-                  onClick={() => add({ status: 'active' })}
+                  onClick={() => add({ status: "active" })}
                   icon={<PlusOutlined />}
                   block
                 >
