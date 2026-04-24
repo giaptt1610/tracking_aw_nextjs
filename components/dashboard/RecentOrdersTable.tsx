@@ -1,11 +1,14 @@
 "use client"
 
+import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Table, Tag } from "antd"
 import type { ColumnsType } from "antd/es/table"
 import { Order, OrderItem, OrderStatus } from "@/types/order"
 import { formatVND, formatDateTime } from "@/lib/utils/formatters"
 import { getOrderProductNames } from "@/lib/utils/orderHelpers"
 import { STATUS_COLOR, STATUS_LABEL } from "@/components/orders/OrderStatusTag"
+import { OrderDetailModal } from "@/components/orders/OrderDetailModal"
 
 const columns: ColumnsType<Order> = [
   { title: "Mã đơn", dataIndex: "id", key: "id", width: 120 },
@@ -48,13 +51,29 @@ const columns: ColumnsType<Order> = [
 ]
 
 export function RecentOrdersTable({ orders }: { orders: Order[] }) {
+  const router = useRouter()
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+
   return (
-    <Table
-      dataSource={orders}
-      columns={columns}
-      rowKey="id"
-      pagination={false}
-      size="small"
-    />
+    <>
+      <Table
+        dataSource={orders}
+        columns={columns}
+        rowKey="id"
+        pagination={false}
+        size="small"
+        onRow={(r) => ({ onClick: () => setSelectedOrder(r) })}
+        rowClassName="cursor-pointer"
+      />
+      <OrderDetailModal
+        open={!!selectedOrder}
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
+        onSuccess={() => {
+          router.refresh()
+          setSelectedOrder(null)
+        }}
+      />
+    </>
   )
 }

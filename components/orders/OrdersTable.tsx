@@ -1,11 +1,10 @@
 "use client"
 import { useState } from "react"
-import { Button, Space, Table } from "antd"
-import { EditOutlined } from "@ant-design/icons"
+import { Space, Table } from "antd"
 import type { ColumnsType } from "antd/es/table"
 import { Order, PaymentType } from "@/types/order"
 import { OrderStatusTag } from "./OrderStatusTag"
-import { EditOrderModal } from "./EditOrderModal"
+import { OrderDetailModal } from "./OrderDetailModal"
 import { DeleteOrderButton } from "./DeleteOrderButton"
 import { formatVND, formatDateTime } from "@/lib/utils/formatters"
 
@@ -26,7 +25,7 @@ export function OrdersTable({
   onPageChange,
   onRefresh,
 }: OrdersTableProps) {
-  const [editOrder, setEditOrder] = useState<Order | null>(null)
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
 
   const columns: ColumnsType<Order> = [
     { title: "Mã đơn", dataIndex: "id", key: "id", width: 130 },
@@ -86,14 +85,9 @@ export function OrdersTable({
     {
       title: "",
       key: "actions",
-      width: 80,
+      width: 50,
       render: (_: unknown, r: Order) => (
         <Space onClick={(e) => e.stopPropagation()}>
-          <Button
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => setEditOrder(r)}
-          />
           <DeleteOrderButton orderId={r.id} onSuccess={onRefresh} />
         </Space>
       ),
@@ -114,16 +108,17 @@ export function OrdersTable({
           showTotal: (t) => "Tổng " + t + " đơn",
         }}
         onChange={(p) => onPageChange(p.current ?? 1, p.pageSize ?? pageSize)}
+        onRow={(r) => ({ onClick: () => setSelectedOrder(r) })}
         rowClassName="cursor-pointer"
         size="middle"
       />
-      <EditOrderModal
-        open={!!editOrder}
-        order={editOrder}
-        onClose={() => setEditOrder(null)}
+      <OrderDetailModal
+        open={!!selectedOrder}
+        order={selectedOrder}
+        onClose={() => setSelectedOrder(null)}
         onSuccess={() => {
           onRefresh()
-          setEditOrder(null)
+          setSelectedOrder(null)
         }}
       />
     </>
