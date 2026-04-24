@@ -37,6 +37,24 @@ export function OrdersTable({
       width: 160,
     },
     {
+      title: "Người đặt",
+      key: "customer",
+      width: 150,
+      render: (_: unknown, r: Order) =>
+        r.customerName || r.customerPhone ? (
+          <div>
+            {r.customerName && <div>{r.customerName}</div>}
+            {r.customerPhone && (
+              <div style={{ fontSize: 12, color: "#888" }}>
+                {r.customerPhone}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span className="text-gray-300">—</span>
+        ),
+    },
+    {
       title: "Sản phẩm",
       key: "items",
       render: (_: unknown, r: Order) =>

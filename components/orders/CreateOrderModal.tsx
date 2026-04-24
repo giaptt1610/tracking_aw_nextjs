@@ -158,6 +158,8 @@ export function CreateOrderModal({
       status: values.status,
       note: values.note || undefined,
       paymentType: values.paymentType ?? null,
+      customerName: values.customerName || null,
+      customerPhone: values.customerPhone || null,
       createdAt: values.createdAt
         .hour((values.createdAtTime ?? dayjs()).hour())
         .minute((values.createdAtTime ?? dayjs()).minute())
@@ -387,6 +389,22 @@ export function CreateOrderModal({
             options={PAYMENT_TYPE_OPTIONS}
           />
         </Form.Item>
+        <div className="flex gap-4">
+          <Form.Item
+            name="customerName"
+            label="Tên người đặt"
+            className="flex-1"
+          >
+            <Input placeholder="Tên người đặt (tuỳ chọn)" />
+          </Form.Item>
+          <Form.Item
+            name="customerPhone"
+            label="Số điện thoại"
+            className="flex-1"
+          >
+            <Input placeholder="Số điện thoại (tuỳ chọn)" />
+          </Form.Item>
+        </div>
         <Form.Item name="note" label="Ghi chú">
           <Input.TextArea rows={2} placeholder="Ghi chú (tùy chọn)" />
         </Form.Item>

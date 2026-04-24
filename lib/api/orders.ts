@@ -24,6 +24,8 @@ export type OrderRow = {
   totalSellRevenue: string | number
   note: string | null
   paymentType: string | null
+  customerName: string | null
+  customerPhone: string | null
   createdAt: Date
   items: OrderRowItem[]
 }
@@ -43,6 +45,8 @@ export function mapOrderRow(row: OrderRow): Order {
     profit: totalSellRevenue - totalPurchaseCost,
     note: row.note ?? undefined,
     paymentType: isPaymentType(row.paymentType) ? row.paymentType : null,
+    customerName: row.customerName ?? null,
+    customerPhone: row.customerPhone ?? null,
     createdAt:
       row.createdAt instanceof Date
         ? row.createdAt.toISOString()
@@ -165,7 +169,7 @@ export async function getOrderTotals(
 }
 
 export type PaymentTypeCostRow = {
-  paymentType: 'cash' | 'visa' | 'unknown'
+  paymentType: "cash" | "visa" | "unknown"
   totalCost: number
   orderCount: number
 }
@@ -215,6 +219,8 @@ export type CreateOrderInput = {
   status: OrderStatus
   note?: string
   paymentType?: PaymentType | null
+  customerName?: string | null
+  customerPhone?: string | null
   createdAt?: string
   items: OrderItemInput[]
 }
@@ -223,6 +229,8 @@ export type UpdateOrderInput = {
   status?: OrderStatus
   note?: string
   paymentType?: PaymentType | null
+  customerName?: string | null
+  customerPhone?: string | null
 }
 
 export async function createOrder(input: CreateOrderInput): Promise<Order> {
@@ -289,6 +297,8 @@ export async function createOrder(input: CreateOrderInput): Promise<Order> {
         totalSellRevenue: String(totalSellRevenue),
         note: input.note ?? null,
         paymentType: input.paymentType ?? null,
+        customerName: input.customerName ?? null,
+        customerPhone: input.customerPhone ?? null,
         ...(createdAt && { createdAt }),
       })
       .returning()
@@ -322,6 +332,12 @@ export async function updateOrder(
       ...(input.note !== undefined && { note: input.note }),
       ...(input.paymentType !== undefined && {
         paymentType: input.paymentType,
+      }),
+      ...(input.customerName !== undefined && {
+        customerName: input.customerName,
+      }),
+      ...(input.customerPhone !== undefined && {
+        customerPhone: input.customerPhone,
       }),
     })
     .where(eq(orders.id, id))

@@ -28,4 +28,6 @@ export interface Order {
   profit: number
   note?: string
   paymentType?: PaymentType | null
+  customerName?: string | null
+  customerPhone?: string | null
 }
