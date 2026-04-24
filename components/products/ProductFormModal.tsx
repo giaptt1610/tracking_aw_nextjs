@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import {
   Button,
   Form,
@@ -56,6 +56,7 @@ export function ProductFormModal({
   onSuccess,
 }: ProductFormModalProps) {
   const [form] = Form.useForm<FormValues>()
+  const [loading, setLoading] = useState(false)
   const isEdit = !!product
 
   useEffect(() => {
@@ -110,9 +111,11 @@ export function ProductFormModal({
         sortOrder: i,
       })),
     }
+    setLoading(true)
     const result = isEdit
       ? await updateProductAction(product!.id, payload)
       : await createProductAction(payload)
+    setLoading(false)
 
     if (result.success) {
       message.success(
@@ -121,7 +124,9 @@ export function ProductFormModal({
       onSuccess()
       onClose()
     } else {
-      message.error(result.error)
+      message.error(
+        isEdit ? "Cập nhật sản phẩm thất bại" : "Tạo sản phẩm thất bại",
+      )
     }
   }
 
@@ -133,6 +138,7 @@ export function ProductFormModal({
       cancelText="Hủy"
       onOk={handleOk}
       onCancel={onClose}
+      confirmLoading={loading}
       destroyOnHidden
       width={680}
     >
@@ -180,21 +186,17 @@ export function ProductFormModal({
           <Form.List name="images">
             {(fields, { add, remove }) => (
               <>
-                {fields.map((field) => (
-                  <Space
-                    key={field.key}
-                    align="baseline"
-                    className="mb-2 w-full"
-                  >
+                {fields.map(({ key, ...restField }) => (
+                  <Space key={key} align="baseline" className="mb-2 w-full">
                     <Form.Item
-                      {...field}
+                      {...restField}
                       noStyle
                       rules={[{ type: "url", message: "URL không hợp lệ" }]}
                     >
                       <Input placeholder="https://..." style={{ width: 360 }} />
                     </Form.Item>
                     <MinusCircleOutlined
-                      onClick={() => remove(field.name)}
+                      onClick={() => remove(restField.name)}
                       className="text-red-400"
                     />
                   </Space>
