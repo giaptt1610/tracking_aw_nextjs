@@ -72,6 +72,8 @@ export const orders = pgTable("orders", {
   }).notNull(),
   note: text("note"),
   paymentType: text("payment_type"),
+  customerName: text("customer_name"),
+  customerPhone: text("customer_phone"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .defaultNow()
     .notNull(),

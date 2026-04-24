@@ -96,6 +96,8 @@ export function OrderDetailModal({
         status: order.status,
         paymentType: order.paymentType ?? null,
         note: order.note ?? "",
+        customerName: order.customerName ?? "",
+        customerPhone: order.customerPhone ?? "",
       })
     }
   }, [open, order, form])
@@ -109,6 +111,8 @@ export function OrderDetailModal({
         status: values.status,
         note: values.note || undefined,
         paymentType: values.paymentType ?? null,
+        customerName: values.customerName || null,
+        customerPhone: values.customerPhone || null,
       })
       if (result.success) {
         message.success("Cập nhật đơn hàng thành công")
@@ -182,6 +186,14 @@ export function OrderDetailModal({
                   placeholder="Không chọn"
                   options={PAYMENT_TYPE_OPTIONS}
                 />
+              </Form.Item>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <Form.Item name="customerName" label="Tên người đặt">
+                <Input placeholder="Tên người đặt (tuỳ chọn)" />
+              </Form.Item>
+              <Form.Item name="customerPhone" label="Số điện thoại">
+                <Input placeholder="Số điện thoại (tuỳ chọn)" />
               </Form.Item>
             </div>
             <Form.Item name="note" label="Ghi chú">
