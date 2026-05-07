@@ -56,7 +56,7 @@ export default function ProductsPage() {
       )
     : products
 
-  const categories = Array.from(new Set(filteredProducts.map((p) => p.category)))
+  const categories = Array.from(new Set(filteredProducts.map((p) => p.category))).sort((a, b) => a.localeCompare(b, "vi"))
 
   const openCreate = () => { setEditProduct(null); setModalOpen(true) }
   const openEdit = (p: Product) => { setEditProduct(p); setModalOpen(true) }
